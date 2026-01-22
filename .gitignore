@@ -1,0 +1,17 @@
+# Ignore LaTeX clutter
+*.aux
+*.log
+*.out
+*.toc
+*.synctex.gz
+*.fls
+*.fdb_latexmk
+*.lof
+*.lot
+*.bbl
+*.blg
+
+
+
+# But DO NOT ignore PDFs inside the images folder (keep approval.pdf/cover.pdf)
+!images/*.pdf

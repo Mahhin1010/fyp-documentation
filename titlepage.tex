@@ -1,0 +1,75 @@
+% --- START OF TITLE PAGE FILE ---
+\begin{titlepage}
+	% 1. FORCE SPECIAL MARGINS FOR THIS PAGE ONLY
+	% This overrides the main document's 1.5in margins temporarily
+	\newgeometry{left=0.6in, right=0.6in, top=0.5in, bottom=0.5in}
+	
+	% 2. Border Settings
+	\setlength{\fboxsep}{15pt}
+	\setlength{\fboxrule}{1.5pt}
+	
+	\centering
+	\vspace*{0.5cm}
+	
+	% 3. The Bordered Box
+	\fbox{\begin{minipage}[c][0.95\textheight]{0.95\textwidth}
+			\centering
+			
+			\vspace{0.5cm}
+			
+			% University Name
+			{\Large\bfseries FEDERAL URDU UNIVERSITY OF ARTS, SCIENCE AND\\[0.15cm] TECHNOLOGY\par}
+			
+			\vspace{0.7cm}
+			
+			% Logo (Ensure logo.png is in the project folder)
+			\includegraphics[width=0.35\textwidth]{logo.png}
+			
+			\vspace{0.7cm}
+			
+			% Document Type
+			{\Large\bfseries Final Year Project (Phase-I)\par}
+			\vspace{0.25cm}
+			{\large\bfseries Project Proposal\par}
+			
+			\vspace{0.5cm}
+			
+			% Project Title
+			{\large\bfseries Smart Expense Sorter and Analytics\par}
+			\vspace{0.15cm}
+			{\normalsize Web Application Version 1.0\par}
+			
+			\vspace{1.5cm}
+			
+			% Prepared By
+			\begin{flushleft}
+				\textbf{Prepared by:}\\[0.25cm]
+				1. Mahhin Shahzad (Reg No: 123456)\\[0.1cm]
+				2. Rida Eman (Reg No: 789012)
+			\end{flushleft}
+			
+			\vspace{1.0cm}
+			
+			% Supervised By
+			\begin{flushleft}
+				\textbf{Supervised by:}\\[0.25cm]
+				Mr. Naeem Akhter Malik\\
+				\textbf{Lecturer}, Department of Computer Science
+			\end{flushleft}
+			
+			\vfill % Pushes date to bottom
+			
+			% Date
+			\begin{flushleft}
+				\textbf{Date:} 18-10-2025
+			\end{flushleft}
+			
+			\vspace{0.5cm}
+			
+	\end{minipage}}
+	
+	% 4. RESTORE MARGINS FOR THE REST OF THE DOCUMENT
+	\restoregeometry
+	
+\end{titlepage}
+% --- END OF TITLE PAGE FILE ---
