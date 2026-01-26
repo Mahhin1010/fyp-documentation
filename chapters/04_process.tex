@@ -1,0 +1,29 @@
+
+% =========================================================
+% CHAPTER 4: PROCESS MODELING AND SYSTEM ANALYSIS
+% =========================================================
+\chapter{Process Modeling and System Analysis}
+
+This chapter focuses on the dynamic aspects of the Smart Transaction Sorter and Analytics System. It details the flow of control and data between various system components and actors. Through the use of Activity Diagrams and System Sequence Diagrams (SSD), we visualize the operational workflows, including authentication, data ingestion, AI-based sorting, and analytics generation, to ensure a clear understanding of the system's runtime behavior.
+
+\section{System Activity Diagram}
+The Activity Diagram illustrates the operational workflow of the system, detailing the flow of control between the User, the System, and the Intelligent Sorting Module. It captures the sequential steps from authentication to the final visualization of analytics.
+
+\begin{figure}[H]
+	\centering
+	% Sizing: 85% of page height ensures it fits on one page with the title
+	\includegraphics[height=0.85\textheight, width=1.0\textwidth, keepaspectratio]{activity_diagram.png}
+	\caption{Activity Diagram: Smart Transaction Sorter and Analytics System}
+	\label{fig:activity_diagram}
+\end{figure}
+
+\section{System Sequence Diagrams (SSD)}
+The System Sequence Diagram (SSD) depicts the interactions between the User, the Smart Transaction System, and the AI Engine over time. It details the specific messages exchanged during the core processes of Authentication, Data Processing, and Analytics.
+
+\begin{figure}[H]
+	\centering
+	% Sizing: 85% of page height to fit the long vertical flow
+	\includegraphics[height=0.85\textheight, width=1.0\textwidth, keepaspectratio]{ssd_diagram.png}
+	\caption{System Sequence Diagram (SSD) for Core Workflow}
+	\label{fig:ssd_diagram}
+\end{figure}

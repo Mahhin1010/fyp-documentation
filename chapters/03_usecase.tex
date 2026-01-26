@@ -1,0 +1,295 @@
+
+% =========================================================
+% CHAPTER 3: USE CASE ANALYSIS
+% =========================================================
+\chapter{Use Case Analysis}
+
+
+\section{Use Case Diagram}
+The Use Case Diagram provides a high-level overview of the system's interactions with the primary actors (User and System Administrator).
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.9\textwidth, height=13cm, keepaspectratio]{usecase_diagram.png}
+	\caption{Smart Transaction Sorter System Use Case Diagram}
+	\label{fig:usecase_diagram}
+\end{figure}
+
+\section{Fully Dressed Use Case Scenarios}
+
+\subsection{User Access \& Authentication}
+
+% --- USE CASE 1.1 ---
+\subsubsection{Use Case 1.1: User Registration}
+\begin{tabularx}{\textwidth}{|L|R|}
+	\hline
+	Use Case ID & 1.1 \\ \hline
+	Use Case Name & User Registration \\ \hline
+	Actor & User \\ \hline
+	Description & A new user creates a secure account to access the system features. \\ \hline
+	Preconditions & User has a valid email address and internet access. \\ \hline
+	Postconditions & A new user account is created in the database, and the user is redirected to the login page. \\ \hline
+	Priority & High \\ \hline
+	Normal Course & 
+	\begin{normalsteps}
+		\item User navigates to the application landing page.
+		\item User selects "Register".
+		\item System displays the registration form.
+		\item User enters Name, Email, and Password (twice).
+		\item System validates the input format.
+		\item System hashes the password and saves the new user record.
+		\item System displays a success message.
+	\end{normalsteps} \\ \hline
+	Alternative Courses & 
+	\textbf{5a. Weak Password:} 
+	\begin{altsteps}
+		\item System detects password does not meet security complexity requirements.
+		\item System prompts user to choose a stronger password.
+	\end{altsteps} 
+	\textbf{6a. Email Already Exists:} 
+	\begin{altsteps}
+		\item Database check confirms the email is already registered.
+		\item System displays error: "Account already exists".
+		\item System prompts user for Login.
+	\end{altsteps} \\ \hline
+	Exceptions & Database connection failure prevents account creation. \\ \hline
+	Special Req. & Passwords must be hashed using a strong algorithm (e.g., PBKDF2 or Argon2) before storage. \\ \hline
+\end{tabularx}
+
+\newpage
+
+% --- USE CASE 1.2 ---
+\subsubsection{Use Case 1.2: Secure Login}
+\begin{tabularx}{\textwidth}{|L|R|}
+	\hline
+	Use Case ID & 1.2 \\ \hline
+	Use Case Name & Secure Login \\ \hline
+	Actor & User, System Administrator \\ \hline
+	Description & Users or Admins log in to access their respective dashboards. \\ \hline
+	Preconditions & User/Admin must have a registered account. \\ \hline
+	Postconditions & Actor is authenticated, a session is established, and they are redirected to their authorized dashboard. \\ \hline
+	Priority & High \\ \hline
+	Normal Course & 
+	\begin{normalsteps}
+		\item Actor navigates to the Login page.
+		\item Actor enters Email and Password.
+		\item System verifies credentials against the database.
+		\item System generates a secure session token.
+		\item System identifies the role (User or Admin) and redirects to the appropriate Dashboard.
+	\end{normalsteps} \\ \hline
+	Alternative Courses & 
+	\textbf{3a. Invalid Credentials:} 
+	\begin{altsteps}
+		\item System detects email/password do not match.
+		\item System displays "Invalid Login" error.
+		\item System allows retry (limit 5 attempts).
+	\end{altsteps} \\ \hline
+	Exceptions & Account is locked due to too many failed attempts. \\ \hline
+	Special Req. & Communication must occur over HTTPS. \\ \hline
+\end{tabularx}
+
+\newpage
+
+\subsection{Core Configuration}
+
+% --- USE CASE 2.1 ---
+\subsubsection{Use Case 2.1: Manage Spending Categories}
+\begin{tabularx}{\textwidth}{|L|R|}
+	\hline
+	Use Case ID & 2.1 \\ \hline
+	Use Case Name & Manage Spending Categories \\ \hline
+	Actor & User \\ \hline
+	Description & User defines the custom labels (e.g., "Gym", "Groceries") that the AI will use for sorting. \\ \hline
+	Preconditions & User is logged in. \\ \hline
+	Postconditions & The list of categories is updated in the database and ready for the AI engine. \\ \hline
+	Priority & High \\ \hline
+	Normal Course & 
+	\begin{normalsteps}
+		\item User navigates to "Manage Categories".
+		\item System displays current list of categories.
+		\item User clicks "Add New Category".
+		\item User types a label name.
+		\item System saves the category.
+		\item System confirms update.
+	\end{normalsteps} \\ \hline
+	Alternative Courses & 
+	\textbf{2a. Delete Category:} 
+	\begin{altsteps}
+		\item User selects "Delete" on an existing category.
+		\item System removes the category from the list.
+	\end{altsteps}
+	\textbf{5a. Duplicate Category:} 
+	\begin{altsteps}
+		\item User tries to add a category that already exists.
+		\item System prevents save and shows a duplicate error.
+	\end{altsteps} \\ \hline
+	Special Req. & Categories must be unique per user. \\ \hline
+\end{tabularx}
+
+\newpage
+
+\subsection{Data Processing (The AI Core)}
+
+% --- USE CASE 3.1 ---
+\subsubsection{Use Case 3.1: Upload Transaction CSV}
+\begin{tabularx}{\textwidth}{|L|R|}
+	\hline
+	Use Case ID & 3.1 \\ \hline
+	Use Case Name & Upload Transaction CSV \\ \hline
+	Actor & User \\ \hline
+	Description & User uploads a raw CSV file from their bank/wallet for processing. \\ \hline
+	Preconditions & User is logged in and has a valid CSV file. \\ \hline
+	Postconditions & File is parsed, and all transactions are saved to the database with an 'Uncategorized' status. \\ \hline
+	Priority & High \\ \hline
+	Normal Course & 
+	\begin{normalsteps}
+		\item User navigates to "Upload" section.
+		\item User selects a file from local device.
+		\item System scans file type.
+		\item System validates required columns (Date, Description, Amount).
+		\item System parses the file and saves all transactions to the database.
+		\item System confirms successful upload.
+	\end{normalsteps} \\ \hline
+	Alternative Courses & 
+	\textbf{3a. Invalid File Format:} 
+	\begin{altsteps}
+		\item System detects file extension is not .csv.
+		\item System rejects the file.
+	\end{altsteps}
+	\textbf{4a. Missing Columns:} 
+	\begin{altsteps}
+		\item System validation fails (missing "Amount" column).
+		\item System rejects file.
+		\item System tells User exactly which column is missing.
+	\end{altsteps} \\ \hline
+	Exceptions & File size exceeds server limit (e.g., >10MB). \\ \hline
+	Special Req. & Validation must happen immediately before any processing. \\ \hline
+\end{tabularx}
+
+\newpage
+
+% --- USE CASE 3.2 ---
+\subsubsection{Use Case 3.2: Process Transactions (AI Sorting)}
+\begin{tabularx}{\textwidth}{|L|R|}
+	\hline
+	Use Case ID & 3.2 \\ \hline
+	Use Case Name & Process Transactions (AI Sorting) \\ \hline
+	Actor & System (Triggered by User) \\ \hline
+	Description & The AI engine analyzes transaction descriptions and assigns them to User's custom categories. \\ \hline
+	Preconditions & Valid CSV uploaded (UC-3.1) and Categories exist (UC-2.1). \\ \hline
+	Postconditions & All transactions are categorized and saved to the database. \\ \hline
+	Priority & High \\ \hline
+	Normal Course & 
+	\begin{normalsteps}
+		\item User initiates "Process".
+		\item System retrieves User's Category List.
+		\item System feeds text descriptions into the AI Classification Engine.
+		\item AI determines best category match for each row.
+		\item System saves classified data to database.
+		\item System notifies User of completion.
+	\end{normalsteps} \\ \hline
+	Alternative Courses & 
+	\textbf{4a. Low Confidence:} 
+	\begin{altsteps}
+		\item AI model confidence score is below threshold.
+		\item System assigns a default "Uncategorized" label.
+		\item System flags transaction for manual review.
+	\end{altsteps} \\ \hline
+	Exceptions & AI Service timeout. \\ \hline
+	Special Req. & Processing 500 records must take < 60 seconds. \\ \hline
+\end{tabularx}
+
+\newpage
+
+\subsection{Analytics \& Maintenance}
+
+% --- USE CASE 4.1 ---
+\subsubsection{Use Case 4.1: View Analytics Dashboard}
+\begin{tabularx}{\textwidth}{|L|R|}
+	\hline
+	Use Case ID & 4.1 \\ \hline
+	Use Case Name & View Analytics Dashboard \\ \hline
+	Actor & User \\ \hline
+	Description & User views interactive charts summarizing their financial data. \\ \hline
+	Preconditions & Data has been processed (UC-3.2). \\ \hline
+	Postconditions & User gains insight into spending habits. \\ \hline
+	Priority & High \\ \hline
+	Normal Course & 
+	\begin{normalsteps}
+		\item User clicks "Dashboard".
+		\item System aggregates total spending per category.
+		\item System renders charts (Pie/Bar) using plotting libraries.
+		\item User filters view by Date Range (optional).
+	\end{normalsteps} \\ \hline
+	Alternative Courses & 
+	\textbf{2a. No Data:} 
+	\begin{altsteps}
+		\item Database query returns no records.
+		\item System displays "Upload data to see insights" prompt.
+	\end{altsteps} \\ \hline
+	Special Req. & Dashboard must be mobile responsive. \\ \hline
+\end{tabularx}
+
+\vspace{0.5cm}
+
+% --- USE CASE 4.2 ---
+\subsubsection{Use Case 4.2: Delete Transaction Data}
+\begin{tabularx}{\textwidth}{|L|R|}
+	\hline
+	Use Case ID & 4.2 \\ \hline
+	Use Case Name & Delete Transaction Data \\ \hline
+	Actor & User \\ \hline
+	Description & User permanently removes uploaded data from the system. \\ \hline
+	Preconditions & User has existing data. \\ \hline
+	Postconditions & Data is permanently erased from database. \\ \hline
+	Priority & Medium \\ \hline
+	Normal Course & 
+	\begin{normalsteps}
+		\item User navigates to "Data Management".
+		\item User selects a file batch or "Delete All".
+		\item System displays "Are you sure?" confirmation warning.
+		\item User confirms.
+		\item System performs hard delete of records.
+		\item Dashboard updates to show empty state.
+	\end{normalsteps} \\ \hline
+	Alternative Courses & 
+	\textbf{4a. Cancel Delete:} 
+	\begin{altsteps}
+		\item User clicks "Cancel" at confirmation.
+		\item System retains data and cancels the operation.
+	\end{altsteps} \\ \hline
+	Special Req. & Data must be unrecoverable after deletion (Privacy Rule). \\ \hline
+\end{tabularx}
+
+\newpage
+
+\subsection{Administration}
+
+% --- USE CASE 5.1 ---
+\subsubsection{Use Case 5.1: Admin User Management}
+\begin{tabularx}{\textwidth}{|L|R|}
+	\hline
+	Use Case ID & 5.1 \\ \hline
+	Use Case Name & Admin User Management \\ \hline
+	Actor & System Administrator \\ \hline
+	Description & Admin manages user accounts and views system usage stats. \\ \hline
+	Preconditions & Admin is logged in and authorized. \\ \hline
+	Postconditions & User account status is updated. \\ \hline
+	Priority & Low \\ \hline
+	Normal Course & 
+	\begin{normalsteps}
+		\item Admin navigates to the Administrative Panel.
+		\item Admin searches for a User by email.
+		\item System displays User details.
+		\item Admin selects "Edit" or "Delete".
+		\item System processes the administrative action.
+	\end{normalsteps} \\ \hline
+	Alternative Courses & 
+	\textbf{3a. Audit View:} 
+	\begin{altsteps}
+		\item Admin selects "View Details".
+		\item System displays read-only list of User's categories for support purposes.
+	\end{altsteps} \\ \hline
+	Exceptions & Admin cannot view User's raw passwords (hashed). \\ \hline
+	Special Req. & Admin actions must be logged. \\ \hline
+\end{tabularx}

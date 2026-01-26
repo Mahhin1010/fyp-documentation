@@ -1,0 +1,113 @@
+% !TeX program = xelatex
+% --- 1. FONT SIZE: 11pt (Strictly per Template) ---
+\documentclass[11pt,a4paper]{report}
+
+% =========================================================
+% 1. DOCUMENT SETUP
+% =========================================================
+
+% --- 2. : 2.5cm on all sides (Strictly per Template) ---
+\usepackage[margin=2.5cm]{geometry}
+
+% --- LINE SPACING: 1.5 (Strictly per Template) ---
+\usepackage{setspace}
+\onehalfspacing
+
+% --- REQUIRED PACKAGES ---
+\usepackage{pdfpages} % To insert Cover & Approval PDFs
+\usepackage{tikz}
+\usetikzlibrary{shapes.geometric, arrows, positioning, shadows}
+\usepackage{pgfgantt}
+\usepackage{graphicx}
+\graphicspath{ {./images/} } 
+\usepackage{float}       
+\usepackage{booktabs}    
+\usepackage{longtable}   
+\usepackage{array}       
+\usepackage{tabularx}    
+\usepackage{enumitem}    
+\usepackage[hidelinks]{hyperref} 
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+
+% --- Custom Columns & Lists ---
+\newcolumntype{L}{>{\bfseries\raggedright\arraybackslash}p{3.5cm}} 
+\newcolumntype{R}{>{\raggedright\arraybackslash}X} 
+\newlist{normalsteps}{enumerate}{1}
+\setlist[normalsteps,1]{nosep, leftmargin=*, label=\arabic*., before=\vspace{-0.5\baselineskip}, after=\vspace{0.6\baselineskip}}
+\newlist{altsteps}{enumerate}{1}
+\setlist[altsteps,1]{nosep, leftmargin=1.5em, label=\roman*., before=\vspace{0pt}, after=\vspace{0.3\baselineskip}}
+
+% --- Fonts (Times New Roman) ---
+\usepackage{fontspec}
+\setmainfont{Times New Roman}[
+Path = C:/Windows/Fonts/,
+Extension = .ttf,
+UprightFont = times,
+BoldFont = timesbd,
+ItalicFont = timesi,
+BoldItalicFont = timesbi
+]
+
+% =========================================================
+% 3. HEADING STYLES (Clean Chapter Page)
+% =========================================================
+
+% A. FOR NUMBERED CHAPTERS (Centers title on blank page)
+\titleformat{name=\chapter}[display]
+{\thispagestyle{empty}\vspace*{\fill}\normalfont\fontsize{14}{16}\bfseries\centering}
+{\chaptertitlename\ \thechapter}
+{10pt}
+{\Large}
+[\vspace*{\fill}\clearpage]
+
+% B. FOR UNNUMBERED CHAPTERS (TOC, Lists) - Normal style
+\titleformat{name=\chapter, numberless}[display]
+{\normalfont\fontsize{14}{16}\bfseries\centering}
+{} % no Chapter number here
+{0pt}
+{\Large}
+
+% C. SECTION HEADINGS (Size 12 per Template)
+\titleformat{\section}
+{\normalfont\fontsize{12}{14}\bfseries}{\thesection}{1em}{}
+
+\titleformat{\subsection}
+{\normalfont\fontsize{12}{14}\bfseries}{\thesubsection}{1em}{}
+
+\titleformat{\subsubsection}
+{\normalfont\fontsize{12}{14}\bfseries}{\thesubsubsection}{1em}{}
+
+% --- Footer ---
+\pagestyle{fancy}
+\fancyhf{}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0pt}
+
+% =========================================================
+% 2. DOCUMENT START
+% =========================================================
+\begin{document}
+	
+	% --- 1. INSERT COVER PAGE ---
+	\includepdf[pages=-]{cover.pdf}
+	
+	% --- 2. INSERT APPROVAL PAGE ---
+	\includepdf[pages=-]{approval.pdf}
+	
+	% --- 3. Table of Contents ---
+	\pagenumbering{roman} 
+	\tableofcontents
+	\newpage
+	\listoffigures
+	\newpage
+	\pagenumbering{arabic}
+
+    % --- CHAPTERS ---
+    \input{chapters/01_introduction}
+    \input{chapters/02_requirements}
+    \input{chapters/03_usecase}
+    \input{chapters/04_process}
+    \input{chapters/05_design}
+
+\end{document}

@@ -1,0 +1,235 @@
+
+% =========================================================
+% CHAPTER 2: REQUIREMENTS SPECIFICATION
+% =========================================================
+\chapter{Requirements Specification}
+
+\section{Purpose}
+The purpose of the Smart Transaction Sorter and Analytics System is to provide users with an intelligent, automated way to analyze their personal financial spending. This web application uses Artificial Intelligence (AI) to categorize raw transaction data (from CSV files) and instantly convert it into clear, visual charts, eliminating the need for hours of frustrating manual work.
+
+\section{Project Scope}
+The scope of this project is a standalone, web-based tool that accepts a financial history file (CSV), uses AI to categorize every line based on user-defined labels, and presents the results on a BI Dashboard. The system includes User authentication, Category Management, CSV Upload/Validation, AI Sorting Logic, Data Persistence, and a Visualization Dashboard.
+
+\begin{itemize}
+	\item \textbf{In Scope:} User login, Category creation, CSV parsing, AI classification, Dashboard charts.
+	\item \textbf{Out of Scope:} Direct integration (API) with bank/wallet accounts, payment processing, or real-time transaction tracking.
+\end{itemize}
+
+\section{Definitions, Acronyms, and Abbreviations}
+\renewcommand{\arraystretch}{1.5}
+\begin{longtable}{|p{4cm}|p{10.5cm}|}
+	\hline
+	\textbf{Term/Abbreviation} & \textbf{Definition} \\
+	\hline
+	\endfirsthead
+	\hline
+	\textbf{Term/Abbreviation} & \textbf{Definition} \\
+	\hline
+	\endhead
+	STS & Smart Transaction Sorter (The name of this application). \\ \hline
+	AI & Artificial Intelligence (The component that performs automatic classification). \\ \hline
+	CSV & Comma-Separated Values (The standard file format for data input/upload). \\ \hline
+	BI & Business Intelligence (Refers to the analytical dashboard and visualization tools). \\ \hline
+	DB & Database (The system storage where user and financial data are saved). \\ \hline
+\end{longtable}
+
+\section{Document Overview}
+This document describes the requirements for the Smart Transaction Sorter and Analytics System (STS). It serves as the single reference point for what the system must do and how well it must perform. The STS acts as a complimentary Business Intelligence layer for existing digital wallets and bank applications that currently only offer raw data exports.
+
+\section{Functional Requirements}
+
+\subsection{Security Management}
+
+\subsubsection{Process Sign Up}
+\begin{longtable}{|p{2.5cm}|p{12cm}|}
+	\hline
+	\textbf{ID} & \textbf{Requirement Description} \\
+	\hline
+	SRS-1 & The system shall allow new users to securely register by providing a username, email, and password. \\ \hline
+	SRS-2 & The system must validate that the email address is unique and not already registered. \\ \hline
+	SRS-3 & The system shall store user passwords using a strong one-way hash (never in plain text). \\ \hline
+	SRS-4 & Upon successful registration, the system shall create a dedicated, isolated database scope for the user. \\ \hline
+\end{longtable}
+
+\subsubsection{Process Sign In / Logout}
+\begin{longtable}{|p{2.5cm}|p{12cm}|}
+	\hline
+	\textbf{ID} & \textbf{Requirement Description} \\
+	\hline
+	SRS-5 & The system shall allow registered users to log in securely using their credentials. \\ \hline
+	SRS-6 & The system shall use HTTPS/SSL for all data transfer between the client and server to prevent interception. \\ \hline
+	SRS-7 & The system shall allow users to securely log out, terminating their current session. \\ \hline
+\end{longtable}
+
+\subsection{Category Management}
+
+\subsubsection{Create Spending Category}
+\begin{longtable}{|p{2.5cm}|p{12cm}|}
+	\hline
+	\textbf{ID} & \textbf{Requirement Description} \\
+	\hline
+	SRS-8 & The system shall allow users to create new, personalized spending category labels (e.g., "Groceries", "Utilities"). \\ \hline
+	SRS-9 & The system shall validate that the category name is not a duplicate within the user's profile. \\ \hline
+	SRS-10 & The system shall ensure all created categories are immediately available for the AI Sorting Engine to use. \\ \hline
+\end{longtable}
+
+\subsubsection{Manage Spending Categories}
+\begin{longtable}{|p{2.5cm}|p{12cm}|}
+	\hline
+	\textbf{ID} & \textbf{Requirement Description} \\
+	\hline
+	SRS-11 & The system shall allow users to view a list of all their existing categories. \\ \hline
+	SRS-12 & The system shall allow users to edit the name of an existing category. \\ \hline
+	SRS-13 & The system shall allow users to delete a category (and optionally reassign its associated transactions). \\ \hline
+\end{longtable}
+
+\subsection{Data Ingestion Management}
+
+\subsubsection{Upload Transaction File (CSV)}
+\begin{longtable}{|p{2.5cm}|p{12cm}|}
+	\hline
+	\textbf{ID} & \textbf{Requirement Description} \\
+	\hline
+	SRS-14 & The system shall provide a simple interface for the user to upload a transaction history file. \\ \hline
+	SRS-15 & The system is constrained to accepting only CSV (Comma-Separated Values) file formats. \\ \hline
+	SRS-16 & The system shall provide a progress indicator or status feedback during the upload process. \\ \hline
+\end{longtable}
+
+\subsubsection{File Validation}
+\begin{longtable}{|p{2.5cm}|p{12cm}|}
+	\hline
+	\textbf{ID} & \textbf{Requirement Description} \\
+	\hline
+	SRS-17 & The system shall check the uploaded file for necessary columns (specifically: Date, Description, and Amount). \\ \hline
+	SRS-18 & The system shall provide clear, user-friendly error messages if the file structure is invalid or missing data. \\ \hline
+	SRS-19 & The system shall reject files that exceed a predefined size limit to maintain performance. \\ \hline
+\end{longtable}
+
+\subsection{Intelligent Sorting Management}
+
+\subsubsection{Process Transactions (AI Sorting)}
+\begin{longtable}{|p{2.5cm}|p{12cm}|}
+	\hline
+	\textbf{ID} & \textbf{Requirement Description} \\
+	\hline
+	SRS-20 & The system shall use a smart classification model (AI) to read transaction descriptions from the uploaded file. \\ \hline
+	SRS-21 & The system shall automatically assign the most relevant custom category to each transaction. \\ \hline
+	SRS-22 & The system shall utilize the Hugging Face Transformers library for the classification logic. \\ \hline
+\end{longtable}
+
+\subsubsection{Data Persistence \& Saving}
+\begin{longtable}{|p{2.5cm}|p{12cm}|}
+	\hline
+	\textbf{ID} & \textbf{Requirement Description} \\
+	\hline
+	SRS-23 & The system shall securely save the processed transaction data, including the new category label, to the user's database. \\ \hline
+	SRS-24 & The system shall ensure that once categorized, the financial history persists until explicitly deleted by the user. \\ \hline
+\end{longtable}
+
+\subsection{Analytics Management}
+
+\subsubsection{View Dashboard}
+\begin{longtable}{|p{2.5cm}|p{12cm}|}
+	\hline
+	\textbf{ID} & \textbf{Requirement Description} \\
+	\hline
+	SRS-25 & The system shall display a primary BI (Business Intelligence) dashboard view after processing is complete. \\ \hline
+	SRS-26 & The dashboard shall be interactive, allowing users to hover over elements for more details. \\ \hline
+\end{longtable}
+
+\subsubsection{View Spending Breakdown}
+\begin{longtable}{|p{2.5cm}|p{12cm}|}
+	\hline
+	\textbf{ID} & \textbf{Requirement Description} \\
+	\hline
+	SRS-27 & The system shall display clear charts (e.g., pie charts) visualizing total spending broken down by custom categories. \\ \hline
+	SRS-28 & The system shall calculate and display total expenditure for the uploaded period. \\ \hline
+\end{longtable}
+
+\subsection{Administrator Management}
+
+\subsubsection{Admin Panel Access}
+\begin{longtable}{|p{2.5cm}|p{12cm}|}
+	\hline
+	\textbf{ID} & \textbf{Requirement Description} \\
+	\hline
+	SRS-29 & The System Administrator must use distinct credentials to log in to the dedicated administrative interface. \\ \hline
+	SRS-30 & The Admin Panel shall be secured and inaccessible to standard users. \\ \hline
+\end{longtable}
+
+\subsubsection{User Account Management}
+\begin{longtable}{|p{2.5cm}|p{12cm}|}
+	\hline
+	\textbf{ID} & \textbf{Requirement Description} \\
+	\hline
+	SRS-31 & The Admin shall have the ability to View and Search for any registered user account. \\ \hline
+	SRS-32 & The Admin shall have the ability to Create, Edit, or Delete user accounts if necessary. \\ \hline
+	SRS-33 & The Admin shall have read-only access to view user-created Categories and processed Transactions for auditing purposes. \\ \hline
+\end{longtable}
+
+\section{Non-Functional Requirements}
+
+\subsection{Security}
+\begin{itemize}
+	\item \textbf{Account Protection:} User passwords must be stored using a strong one-way hash.
+	\item \textbf{Session Security:} The system must use HTTPS for all communication to prevent data interception.
+	\item \textbf{User Isolation:} A user's data must be completely isolated and inaccessible to any other user.
+\end{itemize}
+
+\subsection{Usability}
+\begin{itemize}
+	\item The interface must be intuitive, clean, and fully mobile-responsive.
+	\item Training time for a normal user to understand the upload and sort process should be minimal (intuitive design).
+\end{itemize}
+
+\subsection{Reliability}
+\begin{itemize}
+	\item The system must be available and function correctly 99.5\% of the time.
+	\item In any error scenario, the system must provide an appropriate message and retain the state of the user's data (no silent failures).
+\end{itemize}
+
+\subsection{Performance}
+\begin{itemize}
+	\item \textbf{File Processing Time:} A standard file (up to 500 transactions) must be processed, sorted by the AI, and ready for viewing within 60 seconds.
+	\item The system dashboard should load visualization results in under 3 seconds after processing is complete.
+\end{itemize}
+
+\subsection{Design Constraints}
+\begin{itemize}
+	\item \textbf{Technology Stack:} Must use Python (Django Framework) for the backend logic.
+	\item \textbf{Database:} Designed for use with PostgreSQL for scalability.
+	\item \textbf{AI Library:} The system must utilize the Hugging Face Transformers library.
+	\item \textbf{Architecture:} The code must follow the MVT (Model-View-Template) architectural pattern.
+\end{itemize}
+
+\subsection{Data Ownership \& Business Rules}
+\begin{itemize}
+	\item \textbf{Data Ownership:} All uploaded data remains the intellectual property of the User.
+	\item \textbf{No Third-Party Sharing:} User financial data may not be shared, sold, or exposed to any third party.
+	\item \textbf{Persistence:} Processed data remains available until the user explicitly decides to delete it.
+\end{itemize}
+
+\section{External Interface Requirements}
+
+\subsection{User Interfaces}
+The user interface will be entirely web-based, optimized for responsive viewing on desktop and mobile devices. Key interfaces include:
+\begin{itemize}
+	\item Login/Registration Forms.
+	\item Custom Category Management Form (CRUD interface).
+	\item CSV File Upload Interface with progress/status feedback.
+	\item Interactive BI Dashboard (using modern charting libraries like Plotly.js or Chart.js).
+	\item A secure Admin Panel (for System Administrator use only).
+\end{itemize}
+
+\subsection{Hardware Interfaces}
+No specialized hardware is required. The system will interface with standard internet-supported client devices (PC, laptop, mobile, tablet).
+
+\subsection{Software Interfaces}
+The system interfaces with the following software components:
+\begin{itemize}
+	\item \textbf{Python / Django:} Primary backend web application and API interface.
+	\item \textbf{PostgreSQL:} Database management system for data persistence.
+	\item \textbf{Pandas Library:} Used for data manipulation, CSV parsing, and validation.
+	\item \textbf{Hugging Face Transformers:} The core library used for the AI classification model.
+	\item \textbf{Plotly.js / Chart.js:} Frontend JavaScript libraries for rendering visualizations.
+\end{itemize}
