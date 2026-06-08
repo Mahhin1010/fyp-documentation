@@ -1,8 +1,10 @@
 
 % =========================================================
-% CHAPTER 3: USE CASE ANALYSIS
+% CHAPTER 3: SYSTEM DESIGN AND USE CASE ANALYSIS
 % =========================================================
-\chapter{Use Case Analysis}
+\chapter{System Design and Use Case Analysis}
+
+This chapter consolidates the behavioral and structural design of the Smart Transaction Sorter and Analytics System. It retains the use case analysis from the earlier documentation, then connects those use cases to the activity, sequence, database, class, and deployment views used to guide implementation. The purpose of this chapter is to show how the requirements become a coherent system model before the construction chapter explains the actual code.
 
 
 \section{Use Case Diagram}
@@ -55,8 +57,6 @@ The Use Case Diagram provides a high-level overview of the system's interactions
 	Exceptions & Database connection failure prevents account creation. \\ \hline
 	Special Req. & Passwords must be hashed using a strong algorithm (e.g., PBKDF2 or Argon2) before storage. \\ \hline
 \end{tabularx}
-
-\newpage
 
 % --- USE CASE 1.2 ---
 \subsubsection{Use Case 1.2: Secure Login}
@@ -293,3 +293,157 @@ The Use Case Diagram provides a high-level overview of the system's interactions
 	Exceptions & Admin cannot view User's raw passwords (hashed). \\ \hline
 	Special Req. & Admin actions must be logged. \\ \hline
 \end{tabularx}
+
+\section{Process Modeling and System Analysis}
+The use cases above describe the system from the perspective of its actors. Process modeling describes the same system from the perspective of runtime behavior: what happens first, which component responds, and how data moves from raw input toward categorized analytics. For this project, process modeling is especially important because the application is a multi-step workflow that begins with authentication, depends on user-defined categories, accepts transaction files, invokes an AI classification service, persists the result, and finally visualizes categorized data through a BI layer.
+
+\subsection{System Activity Diagram}
+The Activity Diagram illustrates the operational workflow of the system, detailing the flow of control between the User, the System, and the Intelligent Sorting Module. It captures the sequential steps from authentication to the final visualization of analytics. The diagram is intentionally broad because it represents the user journey rather than implementation classes.
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[height=0.85\textheight, width=1.0\textwidth, keepaspectratio]{activity_diagram.png}
+	\caption{Activity Diagram: Smart Transaction Sorter and Analytics System}
+	\label{fig:activity_diagram}
+\end{figure}
+
+The first decision point in the activity diagram is credential validation. This corresponds to Django authentication in the implemented application. If authentication fails, the user cannot reach protected screens such as category management, CSV upload, AI sorting, or analytics. After authentication, the workflow checks whether the user has configured spending categories. This reflects a core design rule: the AI classifier must choose from a valid user-specific category list rather than from a fixed global taxonomy.
+
+The second major decision point is file validation. The system must reject files that are structurally invalid before saving rows to the database. This prevents downstream classification from operating on malformed records and allows the user to correct the upload problem immediately. Once rows are saved, the system treats uncategorized transactions as stable input for AI processing. This separation between upload and AI sorting is deliberate because it makes the workflow recoverable. If the AI service is unavailable or returns an error, the uploaded transaction rows remain stored and can be processed later.
+
+\subsection{System Sequence Diagram}
+The System Sequence Diagram (SSD) depicts the interactions between the User, the Smart Transaction System, and the AI Engine over time. It details the specific messages exchanged during the core processes of authentication, data processing, and analytics.
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[height=0.85\textheight, width=1.0\textwidth, keepaspectratio]{ssd_diagram.png}
+	\caption{System Sequence Diagram (SSD) for Core Workflow}
+	\label{fig:ssd_diagram}
+\end{figure}
+
+The SSD emphasizes the external contract of the system. The user does not call the database or AI service directly. Instead, the web application mediates each interaction: registration, login, category setup, CSV upload, AI processing, and dashboard generation. This mediation is central to the system's security posture because it allows the application layer to check authentication, filter database queries by the logged-in user, validate uploaded files, and validate AI output before any persistent state is changed.
+
+\section{Database Design}
+The database design serves as the foundational data layer for the Smart Transaction Sorter. It ensures that user profiles, custom categories, default category suggestions, and transaction records are stored efficiently and securely. The confirmed final deployment target is PostgreSQL, while the relational model is expressed through Django models. PostgreSQL is appropriate for the final version because it provides durable relational storage, indexing, referential integrity, and scalability for analytical workloads connected to Metabase.
+
+\subsection{Entity Relationship Diagram}
+The Entity Relationship Diagram (Figure \ref{fig:erd}) visualizes the logical structure of the database. It defines the entities such as Users, Categories, and Transactions and the relationships between them. Key relationships include the one-to-many association between a User and their Categories, the one-to-many association between a User and Transactions, and the optional many-to-one relationship from Transaction to Category.
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=1.0\textwidth, height=0.85\textheight, keepaspectratio]{"ERD Diagram.png"}
+	\caption{Entity Relationship Diagram (ERD)}
+	\label{fig:erd}
+\end{figure}
+
+The ERD reflects the principle of user isolation. A category is not merely a label such as Groceries or Rent; it belongs to a specific user. This allows two users to create categories with the same visible name without sharing financial data or classification behavior. A transaction also belongs directly to a user. This is necessary because a transaction can temporarily have no category before AI processing, and it may return to an uncategorized state when confidence is low or a category is removed. Direct ownership prevents uncategorized rows from becoming orphaned.
+
+\section{Application Architecture}
+The application architecture follows a modular Django Model-View-Template design. Django models represent persistent data, views coordinate request handling and business workflows, templates render the user interface, forms validate user input, and URL configurations map browser requests to the correct application behavior. This separation of concerns improves maintainability because authentication, category management, CSV ingestion, AI sorting, and analytics embedding can be reasoned about as distinct modules while still sharing the same user session and database.
+
+\subsection{Class Diagram}
+The Class Diagram (Figure \ref{fig:class_diagram}) depicts the static structure of the system. It illustrates the system's classes, their attributes, methods, and relationships. The diagram is retained from the original design documentation because it captures the intended relationships among users, transaction data, category labels, AI sorting logic, and analytics behavior.
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=1.0\textwidth, height=0.90\textheight, keepaspectratio]{"Class Diagram.png"}
+	\caption{System Class Diagram}
+	\label{fig:class_diagram}
+\end{figure}
+
+In implementation, the class-level design is realized through Django models and service classes. User identity is provided by Django's authentication model. Category and Transaction are implemented as Django models in the pages application. CSV handling is implemented in the transaction upload view and form. AI sorting is implemented as a dedicated service module containing batching, classification, response validation, and orchestration responsibilities. Analytics is implemented through a Django view that generates a secure Metabase dashboard URL.
+
+\subsection{Interaction Design}
+The following sequence diagrams describe the most important workflows in the system. They remain unchanged because they still represent the core workflow accurately: authentication, category setup, CSV upload, AI processing, dashboard access, data deletion as a privacy requirement, and administration. The construction chapter later explains where each workflow is implemented in the codebase.
+
+\subsubsection{User Registration Workflow}
+This interaction details the process of creating a new user account, including validation of unique identity fields and secure password hashing before storage.
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=1.0\textwidth, height=0.85\textheight, keepaspectratio]{seq_register.png}
+	\caption{Sequence Diagram: User Registration}
+	\label{fig:seq_register}
+\end{figure}
+
+\subsubsection{Secure Login Workflow}
+This diagram illustrates the authentication process, verifying credentials against the database and establishing a protected user session upon success.
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=1.0\textwidth, height=0.85\textheight, keepaspectratio]{seq_login.png}
+	\caption{Sequence Diagram: User Login}
+	\label{fig:seq_login}
+\end{figure}
+
+\subsubsection{Manage Spending Categories Workflow}
+This flow demonstrates how a user defines custom spending labels and how the system prevents duplicate category entries for the same user.
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=1.0\textwidth, height=0.85\textheight, keepaspectratio]{seq_categories.png}
+	\caption{Sequence Diagram: Manage Custom Categories}
+	\label{fig:seq_categories}
+\end{figure}
+
+\subsubsection{CSV Data Upload Workflow}
+This diagram covers the data ingestion process, including file extension validation, structure verification, and saving raw transaction data.
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=1.0\textwidth, height=0.85\textheight, keepaspectratio]{seq_upload.png}
+	\caption{Sequence Diagram: CSV Data Upload}
+	\label{fig:seq_upload}
+\end{figure}
+
+\subsubsection{AI Transaction Processing Workflow}
+This is the core system process. It depicts the loop where the AI Engine reads each transaction, predicts the best category based on the user's list, and updates the record.
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=1.0\textwidth, height=0.85\textheight, keepaspectratio]{seq_ai_process.png}
+	\caption{Sequence Diagram: AI Transaction Processing}
+	\label{fig:seq_ai}
+\end{figure}
+
+\subsubsection{Dashboard Analytics Workflow}
+This interaction shows how the system exposes categorized data to the BI layer and delivers analytics to the authenticated user through the dashboard interface.
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=1.0\textwidth, height=0.85\textheight, keepaspectratio]{seq_dashboard.png}
+	\caption{Sequence Diagram: Dashboard Analytics}
+	\label{fig:seq_dashboard}
+\end{figure}
+
+\subsubsection{Data Deletion Workflow}
+This diagram illustrates the privacy feature allowing users to permanently erase their data, including confirmation logic to reduce accidental deletion.
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=1.0\textwidth, height=0.85\textheight, keepaspectratio]{seq_delete.png}
+	\caption{Sequence Diagram: Delete All User Data}
+	\label{fig:seq_delete}
+\end{figure}
+
+\subsubsection{Admin User Management Workflow}
+This final diagram details the administrative capabilities, such as searching for specific users in the system and performing account management actions.
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=1.0\textwidth, height=0.85\textheight, keepaspectratio]{seq_admin.png}
+	\caption{Sequence Diagram: Admin User Management}
+	\label{fig:seq_admin}
+\end{figure}
+
+\section{Physical Architecture and Deployment View}
+The Physical Architecture describes the hardware and software environment in which the system runs. It outlines the deployment nodes, including the client device, the Django application server, the PostgreSQL database server, the Gemini API service, and the Metabase BI layer. In the final target architecture, the browser communicates with the Django application over HTTPS, Django reads and writes application data to PostgreSQL, Gemini API is called for classification, and Metabase reads analytical data for dashboard generation.
+
+\begin{itemize}
+	\item \textbf{Client Node:} Represents the end-user's device running a modern web browser to access the application.
+	\item \textbf{Application Server Node:} Hosts the Django web application, URL routing, views, templates, forms, and AI orchestration logic.
+	\item \textbf{Database Node:} Hosts PostgreSQL for persistent relational storage of users, categories, default categories, and transactions.
+	\item \textbf{AI Service Node:} Represents Gemini API, which receives structured prompts and returns JSON classifications.
+	\item \textbf{BI Node:} Represents Metabase, which provides the dashboard embedded inside the Django interface.
+\end{itemize}
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=1.0\textwidth, height=0.45\textheight, keepaspectratio]{deployment.png}
+	\caption{System Deployment Architecture}
+	\label{fig:deployment}
+\end{figure}
+
+This deployment design separates operational responsibilities. Django owns application security and user workflow. PostgreSQL owns durable relational data. Gemini API owns language-model based classification. Metabase owns dashboard presentation. Separating these responsibilities keeps the application maintainable because the classification service and dashboard service can evolve without rewriting the core transaction upload and persistence logic.

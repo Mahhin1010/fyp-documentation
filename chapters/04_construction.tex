@@ -1,0 +1,526 @@
+% =========================================================
+% CHAPTER 4: CONSTRUCTION
+% =========================================================
+\chapter{Construction}
+
+\section{Introduction}
+This chapter explains how the Smart Transaction Sorter and Analytics System was constructed as an operational Django web application. While the previous chapters established the problem, requirements, use cases, and design, this chapter traces those decisions into the actual software structure. It focuses on the implemented codebase, the way data is represented, the way user requests move through the application, and the way the system integrates AI classification and Business Intelligence.
+
+The construction chapter is intentionally detailed because the project depends on the correct interaction of several modules. Authentication must protect financial data. Category management must keep each user's taxonomy separate. CSV ingestion must accept realistic transaction exports without corrupting data. The AI layer must classify only into valid user categories and must not allow invented labels to enter the database. The analytics layer must expose a dashboard without bypassing the Django application's authentication context. The implementation therefore combines standard Django mechanisms with project-specific services for transaction processing and classification.
+
+\section{Development Environment and Project Organization}
+The project is implemented as a Django application located in the project code folder. The central project package is \texttt{myproject}, and the two main Django applications are \texttt{accounts} and \texttt{pages}. The \texttt{accounts} application contains the signup workflow and authentication-facing form logic. The \texttt{pages} application contains the business domain: categories, transactions, CSV upload, AI sorting, analytics dashboard embedding, and administrative model registration.
+
+\subsection{Technology Stack}
+The confirmed technology stack is:
+\begin{itemize}
+	\item \textbf{Backend:} Python and Django.
+	\item \textbf{Database:} PostgreSQL as the final relational database target.
+	\item \textbf{AI/ML API:} Gemini API for transaction classification.
+	\item \textbf{BI Tool:} Metabase for dashboard analytics.
+	\item \textbf{Frontend:} Django templates, HTML, CSS, JavaScript, Bootstrap, Font Awesome icons, and Jazzmin for the admin interface.
+\end{itemize}
+
+The codebase uses Django's Model-View-Template architecture. Models define database-backed entities. Views handle HTTP requests and coordinate business workflows. Templates render the browser interface. Forms validate user input before it reaches the view logic. URL configuration files map paths to views. This architecture is appropriate for the project because the system is workflow-driven and data-centered rather than a single static dashboard.
+
+\subsection{Top-Level Project Structure}
+The relevant project structure is summarized in Table \ref{tab:project_structure}. The table is not a complete file inventory; it focuses on the construction units that materially affect the thesis implementation.
+
+\renewcommand{\arraystretch}{1.35}
+\begin{longtable}{|p{4.2cm}|p{9.6cm}|}
+	\caption{Main project directories and their responsibilities.}
+	\label{tab:project_structure}\\
+	\hline
+	\textbf{Path} & \textbf{Construction Responsibility} \\
+	\hline
+	\endfirsthead
+	\hline
+	\textbf{Path} & \textbf{Construction Responsibility} \\
+	\hline
+	\endhead
+	\texttt{manage.py} & Django command-line entry point for running the server, applying migrations, creating admin users, and executing tests. \\ \hline
+	\texttt{myproject/settings.py} & Central configuration for installed applications, middleware, templates, static files, authentication redirects, Gemini API key loading, and Metabase embedding settings. \\ \hline
+	\texttt{myproject/urls.py} & Root URL dispatcher that connects the admin panel, page routes, and account routes. \\ \hline
+	\texttt{accounts/} & Signup form, signup view, and authentication URL wiring for login, logout, and account creation. \\ \hline
+	\texttt{pages/models.py} & Domain data model for categories, default category suggestions, and transactions. \\ \hline
+	\texttt{pages/forms.py} & CSV upload validation logic, including file type checks and user-facing validation messages. \\ \hline
+	\texttt{pages/views.py} & Main business workflows: home page, category management, CSV import, AI sorting, analytics embedding, and manual category update API. \\ \hline
+	\texttt{pages/ai\_engine.py} & Gemini-based classification service, including batching, prompt construction, response parsing, response validation, and database update orchestration. \\ \hline
+	\texttt{templates/} & User-facing HTML templates for authentication, category management, upload, AI sorting, analytics, and shared layout. \\ \hline
+	\texttt{static/} & CSS, JavaScript, images, logo assets, and the sample transaction CSV file. \\ \hline
+\end{longtable}
+
+\section{Django Configuration and Application Wiring}
+The Django project is wired through \texttt{INSTALLED\_APPS}, middleware, root URLs, and template settings. The installed applications include Django's built-in admin, authentication, content types, sessions, messages, and static files. The project also installs \texttt{pages}, \texttt{accounts}, and \texttt{jazzmin}. This combination gives the system both a custom user workflow and a styled administrator interface.
+
+\subsection{URL Routing}
+The root URL configuration delegates the root website to \texttt{pages.urls}, authentication paths to \texttt{accounts.urls}, and administrative paths to Django admin. This is a clean separation because the root application pages and the account pages evolve independently.
+
+\begin{lstlisting}[language=Python, caption={Root URL routing in the Django project.}, label={lst:root_urls}]
+urlpatterns = [
+    path('admin/', admin.site.urls),
+    path('', include('pages.urls')),
+    path('accounts/', include('accounts.urls')),
+]
+\end{lstlisting}
+
+The pages URL file maps each major workflow to a view class. The route names are used by templates, so navigation remains stable even if a path changes later.
+
+\begin{lstlisting}[language=Python, caption={Business workflow routes in the pages app.}, label={lst:pages_urls}]
+urlpatterns = [
+    path('', HomeView.as_view(), name='home'),
+    path('about/', AboutView.as_view(), name='about'),
+    path('features/', FeaturesView.as_view(), name='features'),
+    path('categories/', ManageCategoriesView.as_view(), name='manage_categories'),
+    path('upload/', TransactionUploadView.as_view(), name='upload_transactions'),
+    path('ai-sorting/', AISortingView.as_view(), name='ai_sorting'),
+    path('api/update-category/', UpdateTransactionCategoryAPI.as_view(),
+         name='api_update_category'),
+    path('analytics/', AnalyticsDashboardView.as_view(),
+         name='analytics_dashboard'),
+]
+\end{lstlisting}
+
+This URL design corresponds directly to the user guide workflow: first the user signs in, then creates categories, uploads transaction data, processes the data using AI sorting, manually corrects low-confidence results if necessary, and finally opens analytics.
+
+\subsection{Authentication Redirects and Session Behavior}
+Django's session and authentication middleware are enabled in the project settings. The application sets a post-login redirect to category management, encouraging users to configure spending categories before uploading or processing transactions. Logout redirects to the public home page. This behavior supports the design rule that meaningful classification requires user-defined categories.
+
+\section{Data Model Construction}
+The system's data model is centered on user-owned transaction records. It uses Django's built-in \texttt{User} model rather than a custom user table. This decision reduces authentication complexity because Django already provides password hashing, login handling, session support, permission support, and admin integration.
+
+\subsection{Category Model}
+The \texttt{Category} model stores user-defined labels such as Groceries, Transport, Dining, Rent, Utilities, Shopping, or any other label the user chooses. Each category belongs to one user. The uniqueness constraint prevents a single user from creating duplicate category names.
+
+\begin{lstlisting}[language=Python, caption={User-owned Category model.}, label={lst:category_model}]
+class Category(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE,
+                             related_name='categories')
+    name = models.CharField(max_length=50)
+
+    class Meta:
+        verbose_name_plural = "Categories"
+        unique_together = ('user', 'name')
+
+    def __str__(self):
+        return self.name
+\end{lstlisting}
+
+The \texttt{user} foreign key is essential for privacy and personalization. Two users may both create a category called Groceries, but those records are separate database rows. When the AI classifier runs, it receives only the logged-in user's category names. This ensures that classifications are personalized and that one user's category design does not affect another user's result.
+
+The \texttt{unique\_together} constraint is also important. Without it, duplicate category names could appear in the same user's category list. Duplicate labels would make the AI response ambiguous because a returned category name would match more than one database row. The constraint prevents this problem at the database level, and the category management view catches duplicate insertion attempts and displays a message to the user.
+
+\subsection{Default Category Model}
+The \texttt{DefaultCategory} model stores global suggestions managed by the administrator. These suggestions do not automatically become a user's categories. Instead, they appear as quick-add options in the category management interface. This design separates shared suggestions from personal financial taxonomies.
+
+\begin{lstlisting}[language=Python, caption={Admin-managed default category suggestions.}, label={lst:default_category_model}]
+class DefaultCategory(models.Model):
+    name = models.CharField(max_length=50, unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name_plural = "Default Categories"
+        ordering = ['name']
+\end{lstlisting}
+
+The model has no foreign key to \texttt{User}, \texttt{Category}, or \texttt{Transaction}. This is deliberate. It avoids coupling global suggestions to user-owned financial data. If an administrator changes a default suggestion, existing user categories are not automatically renamed or deleted.
+
+\subsection{Transaction Model}
+The \texttt{Transaction} model is the central storage unit of the application. Every uploaded CSV row that passes validation becomes a transaction. The model stores raw financial details, optional structured context, AI classification metadata, and ownership information.
+
+\begin{lstlisting}[language=Python, caption={Transaction model fields used by upload, AI sorting, and analytics.}, label={lst:transaction_model}]
+class Transaction(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE,
+                             related_name='transactions')
+    category = models.ForeignKey(Category, on_delete=models.SET_NULL,
+                                 null=True, blank=True,
+                                 related_name='transactions')
+    date = models.DateField()
+    description = models.CharField(max_length=255)
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    merchant_name = models.CharField(max_length=100, null=True, blank=True)
+    transaction_type = models.CharField(max_length=50, null=True, blank=True)
+    notes = models.TextField(null=True, blank=True)
+    ai_confidence = models.FloatField(null=True, blank=True)
+    is_ai_categorized = models.BooleanField(default=False)
+    ai_suggested_category = models.CharField(max_length=50,
+                                             null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+\end{lstlisting}
+
+The \texttt{user} foreign key is not redundant even though \texttt{category} also points to a user-owned entity. A transaction may have no category immediately after upload or after low-confidence AI classification. Direct ownership on the transaction ensures that uncategorized records still remain attached to the correct account.
+
+The category relation uses \texttt{SET\_NULL} rather than cascade deletion. If a user deletes a category, the related transaction records should not disappear. They become uncategorized, which is safer for financial history. This is a privacy and reliability decision: removing a label should not erase transaction evidence.
+
+\subsection{Database Constraints and Integrity}
+The database schema protects several important invariants:
+\begin{itemize}
+	\item A category must belong to a user.
+	\item A transaction must belong to a user.
+	\item A transaction may or may not have a category.
+	\item A category name must be unique for the same user.
+	\item A default category name must be globally unique.
+	\item Transaction amount is stored as \texttt{DecimalField}, not floating point, to avoid imprecise financial storage.
+\end{itemize}
+
+One application-level integrity rule deserves attention: a transaction owned by one user must not be assigned to a category owned by another user. The implemented manual update API retrieves both transaction and category through the authenticated user, which prevents cross-user assignment through that endpoint. The same principle is followed in AI classification because the category list is loaded from the current user's categories.
+
+\section{Authentication and Account Construction}
+User registration is implemented in the \texttt{accounts} application through a custom signup form and a class-based view. The signup form extends Django's \texttt{UserCreationForm}, which already includes password validation and password confirmation behavior. The project adds an email field and stores username and email in the built-in user model.
+
+\begin{lstlisting}[language=Python, caption={Signup form based on Django UserCreationForm.}, label={lst:signup_form}]
+class SignUpForm(UserCreationForm):
+    email = forms.EmailField(max_length=254,
+        help_text='Required. Inform a valid email address.')
+
+    class Meta:
+        model = User
+        fields = ('username', 'email')
+\end{lstlisting}
+
+The signup view is a \texttt{CreateView}. On successful form submission, it logs the user in automatically. This reduces friction because the user can continue immediately into the application workflow.
+
+\begin{lstlisting}[language=Python, caption={Signup view with automatic login.}, label={lst:signup_view}]
+class SignUpView(CreateView):
+    form_class = SignUpForm
+    template_name = 'registration/signup.html'
+    success_url = reverse_lazy('home')
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        login(self.request, self.object)
+        return response
+\end{lstlisting}
+
+Login and logout use Django's built-in authentication views. This is preferable to writing custom password verification logic because Django's authentication framework handles password hashing, session creation, and form validation in a standardized way.
+
+\section{Category Management Construction}
+The category management feature is implemented as a class-based view requiring authentication. The view supports two operations: displaying existing categories and handling category create/delete actions.
+
+\subsection{Displaying User Categories and Suggestions}
+On \texttt{GET}, the view retrieves the user's existing categories and the global default category suggestions. Suggestions already used by the user are filtered out before rendering.
+
+\begin{lstlisting}[language=Python, caption={Category display logic with default suggestions.}, label={lst:category_get}]
+def get(self, request):
+    default_categories = DefaultCategory.objects.values_list('name', flat=True)
+    user_categories = Category.objects.filter(user=request.user).order_by('name')
+    existing_names = set(c.name for c in user_categories)
+    suggestions = [s for s in default_categories if s not in existing_names]
+
+    context = {
+        'categories': user_categories,
+        'suggestions': suggestions[:5],
+    }
+    return render(request, 'manage_categories.html', context)
+\end{lstlisting}
+
+This logic supports personalization without forcing a predefined taxonomy. Users can add categories manually, or they can select from administrator-managed suggestions.
+
+\subsection{Creating and Deleting Categories}
+On \texttt{POST}, the view checks which button submitted the form. If the user submits an add action, the view strips whitespace and attempts to create a new category. If a duplicate is attempted, the database constraint raises \texttt{IntegrityError}, which is converted into a user-facing error message. If the user submits a delete action, the category is retrieved through \texttt{user=request.user} before deletion.
+
+This retrieval pattern is important: the view does not delete a category by ID alone. It verifies that the category belongs to the current user. That prevents one user from deleting another user's categories by guessing an ID.
+
+\section{CSV Upload and Data Ingestion}
+CSV upload is one of the most important construction areas because it transforms external financial data into internal records. The project implements ingestion through a Django form and a \texttt{FormView}. The form validates file type. The view validates headers, parses rows, handles errors, and persists valid transactions.
+
+\subsection{File Type Validation}
+The upload form accepts a file field and validates the extension. It provides specific messages for common unsupported formats such as Excel, PDF, JSON, XML, and TXT. This improves usability because users receive corrective instructions rather than a generic rejection.
+
+\begin{lstlisting}[language=Python, caption={CSV upload form extension validation.}, label={lst:upload_form}]
+def clean_file(self):
+    uploaded_file = self.cleaned_data.get('file')
+    if not uploaded_file:
+        raise forms.ValidationError("Please select a file to upload.")
+
+    file_name = uploaded_file.name
+    _, file_extension = os.path.splitext(file_name.lower())
+
+    if file_extension == '.csv':
+        return uploaded_file
+
+    if file_extension in self.FILE_TYPE_ERRORS:
+        message, icon_class, file_type = self.FILE_TYPE_ERRORS[file_extension]
+        raise forms.ValidationError(message, code=file_type,
+                                    params={'icon': icon_class})
+
+    raise forms.ValidationError(
+        f"Unsupported file format '{file_extension}'. Please upload a .csv file.",
+        code='unsupported'
+    )
+\end{lstlisting}
+
+\subsection{Header Validation and Alias Handling}
+The upload view requires \texttt{Date}, \texttt{Description}, and \texttt{Amount}. It also recognizes aliases such as \texttt{raw\_description}, \texttt{merchant}, \texttt{merchant\_name}, \texttt{transaction\_type}, \texttt{type}, \texttt{comments}, \texttt{notes}, and \texttt{memo}. This makes the importer more tolerant of real-world CSV exports, which rarely use one perfect schema.
+
+\begin{lstlisting}[language=Python, caption={Required header and alias handling in the upload view.}, label={lst:header_validation}]
+REQUIRED_HEADERS = ['date', 'description', 'amount']
+OPTIONAL_HEADERS = ['notes', 'merchant_name', 'transaction_type',
+                    'comments', 'raw_description', 'merchant', 'type']
+
+HEADER_ALIASES = {
+    'raw_description': 'description',
+    'merchant_name': 'merchant_name',
+    'merchant': 'merchant_name',
+    'transaction_type': 'transaction_type',
+    'type': 'transaction_type',
+    'comments': 'notes',
+    'notes': 'notes',
+    'memo': 'notes',
+}
+\end{lstlisting}
+
+Header validation happens before row persistence. If the file has no headers or lacks required columns, the view returns an error and does not create transaction rows. This protects the database from incomplete records.
+
+\subsection{Date and Amount Parsing}
+The upload view accepts multiple date formats, including ISO date strings and common day/month/year or month/day/year formats. This is practical because wallet and bank exports may use different date conventions.
+
+\begin{lstlisting}[language=Python, caption={Multiple-format date parsing.}, label={lst:date_parse}]
+def _parse_date(self, date_str):
+    date_formats = [
+        '%Y-%m-%d', '%d/%m/%Y', '%m/%d/%Y', '%d-%m-%Y', '%m-%d-%Y',
+        '%Y-%m-%d %H:%M', '%Y-%m-%d %H:%M:%S',
+        '%d/%m/%Y %H:%M', '%d/%m/%Y %H:%M:%S',
+    ]
+    for fmt in date_formats:
+        try:
+            return datetime.datetime.strptime(date_str, fmt).date()
+        except ValueError:
+            continue
+    return None
+\end{lstlisting}
+
+Amount parsing removes common currency symbols, comma separators, and Pakistani rupee markers before converting the cleaned value to a \texttt{Decimal}. Invalid values do not crash the import; they are recorded as row errors and skipped.
+
+\subsection{Bulk Insertion and Import Statistics}
+Valid rows are converted into \texttt{Transaction} objects and saved through \texttt{bulk\_create}. This is an important performance decision. A CSV file may contain hundreds or thousands of transactions. Saving each row one at a time would create unnecessary database overhead. Bulk insertion reduces the number of database operations.
+
+The view also records import statistics: total rows, successful rows, skipped rows, and error messages. These statistics are stored in the session and displayed after redirect. This follows the Post/Redirect/Get pattern, which prevents accidental duplicate imports if the browser refreshes the result page.
+
+\section{Gemini AI Classification Construction}
+The AI layer is implemented in \texttt{pages/ai\_engine.py}. It is separated from the view because classification has multiple responsibilities: collecting transactions, batching requests, constructing prompts, calling Gemini, parsing responses, validating categories, and updating transactions. Keeping this logic in a service module makes the view smaller and makes the classification process easier to reason about.
+
+\subsection{Service Components}
+The AI engine is divided into four main construction units:
+\begin{itemize}
+	\item \textbf{TransactionBatcher:} Fetches uncategorized transactions and splits them into batches.
+	\item \textbf{GeminiClassifier:} Builds prompts, calls Gemini API, and parses JSON responses.
+	\item \textbf{ResponseValidator:} Ensures the AI result maps to valid user categories and meets confidence rules.
+	\item \textbf{AICategorizationService:} Coordinates the full classification pipeline and updates the database.
+\end{itemize}
+
+\subsection{Batching}
+The batch size is set to 25. This balances prompt size, model response reliability, and failure isolation. If a batch fails, only that batch is affected. Smaller batches also reduce the chance that the model returns malformed JSON because the response is shorter and easier to parse.
+
+\begin{lstlisting}[language=Python, caption={Fetching and batching uncategorized transactions.}, label={lst:batcher}]
+class TransactionBatcher:
+    BATCH_SIZE = 25
+
+    @staticmethod
+    def get_uncategorized(user):
+        from .models import Transaction
+        return Transaction.objects.filter(
+            user=user,
+            category__isnull=True
+        ).order_by('date')
+
+    @classmethod
+    def create_batches(cls, queryset):
+        transactions = list(queryset)
+        for i in range(0, len(transactions), cls.BATCH_SIZE):
+            yield transactions[i:i + cls.BATCH_SIZE]
+\end{lstlisting}
+
+The query filters by both user and null category. This ensures that classification operates only on the current user's pending transactions. It also supports repeatable processing: already categorized transactions are not sent back to Gemini unless their category is cleared.
+
+\subsection{Prompt Contract}
+The classifier uses a strict prompt contract. It tells Gemini to classify each transaction into one category from the user's list, to use merchant, description, type, amount, and comments as signals, and to return only a JSON array. This structured contract is necessary because the application must parse the result and update database records.
+
+\begin{lstlisting}[language=Python, caption={Core Gemini prompt contract.}, label={lst:gemini_prompt}]
+SYSTEM_PROMPT_TEMPLATE = """You are a financial transaction classifier
+for Pakistani bank statements and digital wallet exports.
+
+TASK: Classify each transaction into ONE category from the user's list below.
+
+RULES:
+1. You MUST only use category names from the VALID CATEGORIES list.
+2. Use ALL available fields to make your decision.
+3. If the transaction DOES NOT fit any valid category:
+   - Assign "Uncategorized" to the category field.
+   - Set confidence below 0.5.
+4. Return ONLY a valid JSON array. No markdown fences.
+
+VALID CATEGORIES:
+{categories}
+
+TRANSACTIONS:
+{transactions}
+"""
+\end{lstlisting}
+
+This contract directly supports data integrity. The AI is not permitted to invent new category names for persisted assignments. When it identifies a useful category that is not part of the user's taxonomy, it can return it as a suggestion, but the validator prevents it from being saved as the actual category unless the user later accepts it.
+
+\subsection{Response Parsing and Retry}
+The classifier lazily initializes the Gemini model using the API key from settings. Lazy initialization avoids import-time API configuration and makes error handling clearer. The classifier attempts the API call, parses JSON, and strips common markdown fences if the model wraps the result. If the response cannot be parsed or the API call fails, the service records a controlled error instead of corrupting transaction rows.
+
+\subsection{Response Validation}
+The validator enforces two rules. First, the returned category must exist in the current user's category set. Second, the confidence score must meet the threshold. The implemented threshold is 0.5.
+
+\begin{lstlisting}[language=Python, caption={AI response validation rules.}, label={lst:response_validator}]
+class ResponseValidator:
+    CONFIDENCE_THRESHOLD = 0.5
+
+    @classmethod
+    def validate(cls, ai_results, valid_category_names):
+        validated = []
+        for item in ai_results:
+            txn_id = item.get('id')
+            category = item.get('category', '')
+            confidence = float(item.get('confidence', 0.0))
+
+            if category not in valid_category_names:
+                validated.append(ClassificationResult(
+                    transaction_id=txn_id,
+                    category_name='Uncategorized',
+                    confidence=confidence,
+                    is_valid=False,
+                    suggested_category=category
+                ))
+            elif confidence < cls.CONFIDENCE_THRESHOLD or category == 'Uncategorized':
+                validated.append(ClassificationResult(
+                    transaction_id=txn_id,
+                    category_name='Uncategorized',
+                    confidence=confidence,
+                    is_valid=False
+                ))
+\end{lstlisting}
+
+The validator is essential because language-model output is probabilistic. Even with a strict prompt, an AI response may contain a category that is not in the database, a low confidence prediction, or malformed data. The validator acts as a boundary between external AI output and persistent application state.
+
+\subsection{Orchestration and Bulk Update}
+The \texttt{AICategorizationService} orchestrates the full pipeline. It retrieves the user's categories, ensures the fallback category exists, fetches uncategorized transactions, processes each batch, validates results, and updates transactions in bulk.
+
+\begin{lstlisting}[language=Python, caption={Bulk update after AI classification.}, label={lst:bulk_update}]
+if transactions_to_update:
+    Transaction.objects.bulk_update(
+        transactions_to_update,
+        fields=['category', 'ai_confidence',
+                'is_ai_categorized', 'ai_suggested_category'],
+        batch_size=100
+    )
+\end{lstlisting}
+
+Bulk update is one of the most important construction decisions in the AI workflow. It avoids calling \texttt{save()} once per row after classification. This reduces database overhead and supports larger CSV files.
+
+\section{AI Sorting View and User Feedback}
+The AI sorting view is protected by login requirements. On \texttt{GET}, it calculates current transaction statistics: pending, categorized, total, and category count. It also retrieves recent AI results for display. On \texttt{POST}, it performs pre-flight checks before calling the classification service.
+
+The view handles two important failure scenarios before any AI request is made:
+\begin{itemize}
+	\item If the user has no categories, the system asks the user to create categories first.
+	\item If all transactions are already categorized, the system reports that there is nothing to process.
+\end{itemize}
+
+These checks improve reliability and reduce unnecessary Gemini API calls. They also align the user interface with the system workflow: upload data, define categories, then classify.
+
+\section{Manual Category Correction API}
+The system recognizes that AI classification can be uncertain. Therefore, the AI results screen supports manual correction. The endpoint \texttt{/api/update-category/} accepts a JSON request containing a transaction ID, a category name, and a flag indicating whether a new category should be created.
+
+\begin{lstlisting}[language=Python, caption={Manual transaction category update API.}, label={lst:update_category_api}]
+transaction = Transaction.objects.get(id=transaction_id, user=request.user)
+
+if create_new:
+    category, created = Category.objects.get_or_create(
+        user=request.user,
+        name=category_name
+    )
+else:
+    category = Category.objects.get(user=request.user, name=category_name)
+
+transaction.category = category
+transaction.ai_suggested_category = None
+transaction.save(update_fields=['category', 'ai_suggested_category'])
+\end{lstlisting}
+
+The most important security detail is that both the transaction and category are retrieved through the authenticated user. This prevents cross-user category assignment. The API also clears the AI suggestion once the user has resolved the transaction, which keeps the interface from showing stale suggestions.
+
+\section{Metabase Analytics Integration}
+Analytics are implemented through Metabase embedding. The Django analytics view creates a signed JSON Web Token containing the Metabase dashboard resource, a parameter for the logged-in user ID, and a short expiration time. The resulting URL is rendered inside an iframe in the analytics template.
+
+\begin{lstlisting}[language=Python, caption={Metabase signed embedding URL generation.}, label={lst:metabase_embed}]
+payload = {
+    "resource": {"dashboard": dashboard_id},
+    "params": {
+        "user_id": self.request.user.id
+    },
+    "exp": int(time.time()) + (60 * 10)
+}
+
+token = jwt.encode(payload, secret_key, algorithm="HS256")
+context['iframe_url'] = (
+    f"{settings.METABASE_SITE_URL}/embed/dashboard/{token}"
+    "#bordered=true&titled=true"
+)
+\end{lstlisting}
+
+Embedding Metabase rather than hand-coding every chart has several benefits. Metabase is designed for dashboard creation, filtering, aggregation, and visual exploration. Django remains responsible for authentication and workflow, while Metabase handles BI presentation. The signed token prevents the dashboard link from being a permanently reusable public URL. The ten-minute expiration in the payload reduces exposure if a URL is copied.
+
+The view also handles missing configuration. If the embedding secret is not configured, the template displays a configuration error instead of rendering a broken iframe. This behavior is important for deployment because the application should fail visibly and explain what must be configured.
+
+\section{Frontend Template Construction}
+The frontend uses a shared base template. The base template renders two different layouts:
+\begin{itemize}
+	\item A public navigation layout for visitors who are not authenticated.
+	\item A dashboard-style sidebar layout for authenticated users.
+\end{itemize}
+
+This distinction supports the product flow. Visitors can view public information, log in, or sign up. Authenticated users receive workflow navigation: Home, Categories, Upload CSV, AI Sorting, and Analytics. The sidebar also contains user identity information, logout, and theme toggle controls.
+
+\subsection{Upload Interface}
+The upload template provides drag-and-drop file selection, selected-file display, a progress animation, a sample CSV download link, and a requirements box. The progress bar is client-side feedback while server-side processing occurs after form submission. The requirements box reinforces the expected CSV structure: Date, Description, Amount, and optional Notes.
+
+\subsection{AI Sorting Interface}
+The AI sorting template displays four statistics: pending transactions, categorized transactions, total transactions, and categories. The process button is shown only when there are uncategorized transactions and at least one user category. The results table displays recent classifications, merchant data, amount, category, and confidence. If a transaction is categorized as \texttt{Uncategorized}, the interface provides a dropdown or AI suggestion button so the user can correct the result.
+
+\subsection{Analytics Interface}
+The analytics template displays either an embedded Metabase iframe or a configuration message. This is a practical construction choice because local development, demonstration, and final deployment may have different Metabase configuration states.
+
+\section{Administrative Interface Construction}
+The Django admin interface is extended through Jazzmin for a more polished administrative experience. The system registers Category and DefaultCategory directly, and it defines a custom admin for Transaction.
+
+\begin{lstlisting}[language=Python, caption={Transaction admin configuration.}, label={lst:transaction_admin}]
+@admin.register(Transaction)
+class TransactionAdmin(admin.ModelAdmin):
+    list_display = (
+        'user', 'date', 'description', 'merchant_name',
+        'transaction_type', 'amount', 'category',
+        'ai_confidence', 'is_ai_categorized'
+    )
+    list_filter = ('user', 'date', 'category',
+                   'is_ai_categorized', 'transaction_type')
+    search_fields = ('description', 'merchant_name',
+                     'user__username', 'notes')
+    list_per_page = 50
+    readonly_fields = ('ai_confidence', 'is_ai_categorized', 'created_at')
+\end{lstlisting}
+
+This configuration supports administrative review. Administrators can filter transactions by user, date, category, AI status, and transaction type. They can search descriptions, merchants, usernames, and notes. AI confidence and AI status are read-only because they are generated by the classification pipeline.
+
+\section{Construction Challenges and Resolutions}
+\subsection{Handling Real CSV Variation}
+Financial CSV files are not uniform. Some exports use \texttt{Description}; others use \texttt{Raw\_Description}. Some provide \texttt{Merchant\_Name}; others include merchant context inside the raw description. The implementation addresses this through alias mapping and optional fields. Required columns are kept minimal so the system can accept realistic files, while optional columns improve AI classification quality when present.
+
+\subsection{Avoiding Data Loss During Failed Processing}
+The system separates upload from classification. Upload stores valid rows with a null category. Classification runs later. This means an AI failure does not destroy or discard uploaded transactions. The user can retry sorting after correcting configuration or after the external service becomes available.
+
+\subsection{Preventing AI Hallucinations from Entering the Database}
+Gemini API can understand transaction context, but it is still an external generative service. The system therefore validates every returned category against the user's actual categories. Unknown labels are converted to \texttt{Uncategorized} and optionally stored as suggestions. This preserves data integrity while still allowing the AI to help the user discover missing categories.
+
+\subsection{Supporting Manual Correction}
+No automated classifier is perfect. The manual correction API and inline UI allow users to correct low-confidence or wrong results without re-uploading the CSV. This design improves practical usability because the system becomes a human-in-the-loop classifier rather than an all-or-nothing automation tool.
+
+\subsection{Configuration of Final Deployment Stack}
+The confirmed final stack uses PostgreSQL, Metabase, and Gemini API. The code-side deployment configuration should ensure that PostgreSQL credentials, Gemini API key, Metabase site URL, and Metabase embedding secret are supplied through environment variables or secure deployment settings. This report documents those required configuration areas rather than modifying source code, in accordance with the project instruction that source code should remain unchanged during documentation work.
+
+\section{Chapter Summary}
+The constructed system implements a complete workflow from authentication to analytics. Django provides the application framework, user sessions, URL routing, forms, models, views, templates, and admin panel. The data model isolates user categories and transactions. CSV ingestion validates and persists raw transaction data. Gemini API supplies intelligent classification through a controlled service layer. Response validation protects the database from invalid AI output. Manual correction gives users final control. Metabase provides embedded BI analytics. Together, these construction decisions transform the project from a design concept into a functional financial analytics application.

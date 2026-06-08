@@ -2,7 +2,7 @@
 % =========================================================
 % CHAPTER 2: REQUIREMENTS SPECIFICATION
 % =========================================================
-\chapter{Requirements Specification}
+\chapter{Requirements Analysis}
 
 \section{Purpose}
 The purpose of the Smart Transaction Sorter and Analytics System is to provide users with an intelligent, automated way to analyze their personal financial spending. This web application uses Artificial Intelligence (AI) to categorize raw transaction data (from CSV files) and instantly convert it into clear, visual charts, eliminating the need for hours of frustrating manual work.
@@ -114,7 +114,7 @@ This document describes the requirements for the Smart Transaction Sorter and An
 	\hline
 	SRS-20 & The system shall use a smart classification model (AI) to read transaction descriptions from the uploaded file. \\ \hline
 	SRS-21 & The system shall automatically assign the most relevant custom category to each transaction. \\ \hline
-	SRS-22 & The system shall utilize the Hugging Face Transformers library for the classification logic. \\ \hline
+	SRS-22 & The system shall utilize Gemini API for the classification logic. \\ \hline
 \end{longtable}
 
 \subsubsection{Data Persistence \& Saving}
@@ -198,7 +198,7 @@ This document describes the requirements for the Smart Transaction Sorter and An
 \begin{itemize}
 	\item \textbf{Technology Stack:} Must use Python (Django Framework) for the backend logic.
 	\item \textbf{Database:} Designed for use with PostgreSQL for scalability.
-	\item \textbf{AI Library:} The system must utilize the Hugging Face Transformers library.
+	\item \textbf{AI Service:} The system must utilize Gemini API for intelligent transaction classification.
 	\item \textbf{Architecture:} The code must follow the MVT (Model-View-Template) architectural pattern.
 \end{itemize}
 
@@ -217,7 +217,7 @@ The user interface will be entirely web-based, optimized for responsive viewing 
 	\item Login/Registration Forms.
 	\item Custom Category Management Form (CRUD interface).
 	\item CSV File Upload Interface with progress/status feedback.
-	\item Interactive BI Dashboard (using modern charting libraries like Plotly.js or Chart.js).
+	\item Interactive BI Dashboard embedded through Metabase.
 	\item A secure Admin Panel (for System Administrator use only).
 \end{itemize}
 
@@ -229,7 +229,33 @@ The system interfaces with the following software components:
 \begin{itemize}
 	\item \textbf{Python / Django:} Primary backend web application and API interface.
 	\item \textbf{PostgreSQL:} Database management system for data persistence.
-	\item \textbf{Pandas Library:} Used for data manipulation, CSV parsing, and validation.
-	\item \textbf{Hugging Face Transformers:} The core library used for the AI classification model.
-	\item \textbf{Plotly.js / Chart.js:} Frontend JavaScript libraries for rendering visualizations.
+	\item \textbf{Python CSV and Django Forms:} Used for data parsing, validation, and persistence into database models.
+	\item \textbf{Gemini API:} The core AI service used for transaction classification.
+	\item \textbf{Metabase:} Business Intelligence tool used for dashboard visualization and embedded analytics.
 \end{itemize}
+
+\section{Requirements Traceability}
+Traceability connects the requirements in this chapter with the implemented application features described later in the construction chapter. This is important because the project is not only a design proposal; it is a working Django-based system whose implementation can be mapped back to the stated functional and non-functional requirements.
+
+\renewcommand{\arraystretch}{1.35}
+\begin{longtable}{|p{2.6cm}|p{4.2cm}|p{6.9cm}|}
+	\caption{Requirement-to-feature traceability matrix.}
+	\label{tab:req_traceability}\\
+	\hline
+	\textbf{Requirement IDs} & \textbf{Feature Area} & \textbf{Implemented or Documented Realization} \\
+	\hline
+	\endfirsthead
+	\hline
+	\textbf{Requirement IDs} & \textbf{Feature Area} & \textbf{Implemented or Documented Realization} \\
+	\hline
+	\endhead
+	SRS-1--SRS-7 & Authentication and session management & Django's built-in authentication views, the custom signup view, session middleware, CSRF protection, and password validation support account creation, login, logout, and protected access to application pages. \\ \hline
+	SRS-8--SRS-13 & Category management & The Category model links every category to a user and enforces uniqueness through a user-name constraint. The category screen allows users to add and delete categories and displays admin-managed default suggestions. \\ \hline
+	SRS-14--SRS-19 & CSV ingestion and validation & The transaction upload form accepts CSV files only, validates required columns, maps optional fields, parses dates and amounts, skips invalid rows, and stores valid transactions in bulk. \\ \hline
+	SRS-20--SRS-24 & Intelligent sorting and persistence & Gemini API is used through a batching and validation service. The system sends transaction context and user categories, validates the JSON response, applies the confidence threshold, and persists category assignments through bulk updates. \\ \hline
+	SRS-25--SRS-28 & Analytics dashboard & Metabase provides the BI layer. Django generates a signed dashboard embedding URL so that authenticated users can view visual analytics inside the application interface. \\ \hline
+	SRS-29--SRS-33 & Administration & The Django admin interface, styled through Jazzmin, exposes users, categories, default categories, and transactions to authorized administrators for management and review. \\ \hline
+	NFR Security & Data protection and isolation & User-owned Category and Transaction records include foreign keys to the authenticated user. Application views filter by request.user so one user's uploaded transactions and categories are not returned to another user. \\ \hline
+	NFR Reliability & Error handling and recoverability & CSV errors are collected per row instead of stopping the entire upload. AI errors are reported through user-facing messages, and raw uploaded transactions remain available for retry if classification fails. \\ \hline
+	NFR Performance & Efficient processing & Bulk insertion is used for uploaded transactions, and bulk update is used after classification. This avoids row-by-row database saves during high-volume CSV processing. \\ \hline
+\end{longtable}

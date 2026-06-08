@@ -7,22 +7,22 @@
 \section{Introduction}
 The rise of the digital economy in Pakistan has been driven by the widespread adoption of fintech platforms such as Easypaisa, SadaPay, and JazzCash. These services have empowered millions of users by simplifying payments and providing instant access to their complete transaction history. This readily available data holds the potential to offer valuable insights into personal spending habits. However, for most users, this potential remains untapped as the data is typically provided in raw formats (e.g., CSV files) without sophisticated analytical tools.
 
-This proposal introduces the Smart Transaction Sorter and Analytics system, a web-based application designed to unlock the value hidden within this raw financial data. The project's academic objective is to develop a functional, standalone tool that serves as a research-based feasibility study. The resulting application will be architected as a powerful blueprint for an intelligent analytics module. The long-term vision, while outside the immediate scope of this project, is that such a module could be pitched for integration into the very fintech platforms it complements, thereby closing the significant analytical gap in the current market.
+This report documents the Smart Transaction Sorter and Analytics system, a web-based application designed to unlock the value hidden within this raw financial data. The project's academic objective is to develop a functional, standalone tool that serves as a research-based feasibility study. The resulting application is structured as a practical blueprint for an intelligent analytics module. The long-term vision, while outside the immediate scope of this project, is that such a module could be pitched for integration into the very fintech platforms it complements, thereby closing the significant analytical gap in the current market.
 
 \section{Problem Statement}
-The problem is the absence of an integrated Business Intelligence (BI) and analytics layer in Pakistan digital wallets. People export their data, move it into another tool, and tag each transaction by hand. It’s a manual and time-consuming process.
+The problem is the absence of an integrated Business Intelligence (BI) and analytics layer in Pakistan digital wallets. People export their data, move it into another tool, and tag each transaction by hand. It is a manual and time-consuming process.
 
 \section{Proposed System}
-The proposed system is a standalone, web-based application focused on delivering a complete workflow from raw CSV data to a finalized BI dashboard. To automate data preparation for the dashboard, an intelligent sorting component leveraging a pre-trained language model capable of contextual understanding will be included. The system aims to demonstrate feasibility using publicly available, realistic transaction data. The core functionality is broken down as follows:
+The proposed system is a standalone, web-based application focused on delivering a complete workflow from raw CSV data to a finalized BI dashboard. To automate data preparation for the dashboard, an intelligent sorting component using Gemini API is included. The system aims to demonstrate feasibility using realistic transaction data while remaining independent from direct banking or wallet API integrations. The core functionality is broken down as follows:
 
 \begin{enumerate}
 	\item \textbf{Custom Category Management:} The user will first define their own set of personal spending categories (e.g., Groceries, Transport, Health \& Fitness).
 	\item \textbf{CSV Data Ingestion:} The user then uploads their transaction history as a standard CSV file. This serves as the primary data input mechanism.
-	\item \textbf{Intelligent Sorting Component:} A smart classification component, utilizing the pre-trained language model, will process the raw data. It will analyze transaction descriptions and human-like notes/comments, mapping each entry to the most relevant category from the user's own custom list. This automated step moves beyond simple rule-based mapping to understand context, preparing the data accurately for the BI layer.
-	\item \textbf{Interactive BI Visualization:} Once sorted, the data is presented to the user through an interactive Business Intelligence (BI) dashboard. This dashboard is the primary output and will feature charts and graphs visualizing spending breakdowns tailored to the user's personal financial structure.
+	\item \textbf{Intelligent Sorting Component:} A smart classification component, utilizing Gemini API, processes the raw data. It analyzes transaction descriptions and human-like notes/comments, mapping each entry to the most relevant category from the user's own custom list. This automated step moves beyond simple rule-based mapping to understand context, preparing the data accurately for the BI layer.
+	\item \textbf{Interactive BI Visualization:} Once sorted, the data is presented to the user through an interactive Business Intelligence (BI) dashboard. This dashboard is the primary output and uses Metabase to visualize spending breakdowns tailored to the user's personal financial structure.
 	\item \textbf{Validation with Public Data:} To demonstrate the effectiveness and real-world applicability of the sorting component, the system will be tested and validated using a relevant public dataset. This dataset will contain transaction-like entries with descriptions and comments, allowing for rigorous evaluation of the classification accuracy without relying on proprietary user data.
 \end{enumerate}
-By leveraging a sorting mechanism powered by a pre-trained language model, adaptable to user categories and validated on public data, the application will deliver personalized and accurate insights through its core BI and visualization dashboard.
+By leveraging a sorting mechanism powered by Gemini API, adaptable to user categories and validated on realistic transaction data, the application delivers personalized and accurate insights through its core BI and visualization dashboard.
 
 \section{Survey of the Related Applications}
 To establish the necessity of this project, this survey analyzes two distinct application categories: the local digital wallets that create the data and the problem, and the global expense trackers that represent existing but flawed solutions.
@@ -90,14 +90,14 @@ The system is designed for a single primary actor:
 \end{itemize}
 
 \section{Tools \& Techniques}
-The project will be developed using a modern, robust technology stack to ensure scalability and maintainability.
+The project uses a modern, robust technology stack to ensure scalability and maintainability.
 \begin{itemize}
-	\item \textbf{Backend Framework:} Python with the Django Framework will be used to build the server-side logic, manage URLs, and handle database interactions.
-	\item \textbf{Database:} SQLite will be used for development due to its simplicity. The system will be designed to be compatible with PostgreSQL for potential production deployment.
-	\item \textbf{Data Processing:} The Pandas library will be used for efficient parsing, validation, and manipulation of the uploaded CSV data.
-	\item \textbf{Intelligent Sorting:} The Hugging Face \texttt{Transformers} library will be utilized to implement the classification component, leveraging a pre-trained zero-shot classification model).
-	\item \textbf{Frontend Visualization:} A JavaScript library such as Plotly.js or Chart.js will be used to render the interactive charts and graphs on the BI dashboard.
-	\item \textbf{Web Technologies:} The user interface will be built with standard HTML, CSS, and JavaScript.
+	\item \textbf{Backend Framework:} Python with the Django Framework is used to build the server-side logic, manage URLs, and handle database interactions.
+	\item \textbf{Database:} PostgreSQL is the confirmed database target for the final system because it supports reliable relational storage, indexing, and production deployment.
+	\item \textbf{Data Processing:} Python CSV handling, Django forms, and model validation are used for efficient parsing, validation, and storage of uploaded transaction data.
+	\item \textbf{Intelligent Sorting:} Gemini API is used to implement the classification component through structured prompts, JSON responses, confidence scoring, and category validation.
+	\item \textbf{Frontend Visualization:} Metabase is used as the Business Intelligence layer and is embedded into the Django interface through a secure dashboard URL.
+	\item \textbf{Web Technologies:} The user interface is built with Django templates, HTML, CSS, JavaScript, Bootstrap, and Jazzmin for the administrative interface.
 \end{itemize}
 
 \section{Process Model \& Design Approach}

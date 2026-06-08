@@ -1,0 +1,328 @@
+% =========================================================
+% CHAPTER 6: USER GUIDE
+% =========================================================
+\chapter{User Guide}
+
+\section{Introduction}
+This chapter provides practical instructions for using the Smart Transaction Sorter and Analytics System. The guide is organized by role and workflow so that a user can move from account creation to transaction analytics without needing technical knowledge of Django, Gemini API, PostgreSQL, or Metabase. The main user role is the financial user who uploads and analyzes transactions. The secondary role is the system administrator who manages default suggestions and reviews system records through the admin interface.
+
+\section{User Roles}
+\subsection{Financial User}
+The financial user is the primary user of the system. This user can register, log in, create spending categories, upload CSV transaction files, run AI classification, review results, manually correct categories, and view analytics.
+
+\subsection{System Administrator}
+The system administrator manages the Django admin interface. The administrator can manage users, global default categories, categories, and transaction records depending on assigned permissions. The administrator also prepares the system for demonstration or deployment by ensuring that Gemini API, PostgreSQL, and Metabase settings are available in the target environment.
+
+\section{Visitor Workflow}
+\subsection{Open the Application}
+\begin{normalsteps}
+	\item Open the application URL in a modern web browser.
+	\item Review the public home page.
+	\item Use the navigation menu to open the Features page or About page if needed.
+	\item Select \textit{Get Started} to create an account or \textit{Log In} if an account already exists.
+\end{normalsteps}
+
+\begin{figure}[h]
+	\centering
+	\vspace{4cm}
+	\caption{Screenshot placeholder: public home page.}
+	\label{fig:guide_home}
+\end{figure}
+
+\section{Account Registration}
+\subsection{Create a New Account}
+\begin{normalsteps}
+	\item Click \textit{Get Started} from the public navigation menu.
+	\item Enter a username.
+	\item Enter a valid email address.
+	\item Enter a password that satisfies the password rules.
+	\item Re-enter the password for confirmation.
+	\item Submit the registration form.
+	\item After successful signup, continue into the application workflow.
+\end{normalsteps}
+
+\begin{figure}[h]
+	\centering
+	\vspace{4cm}
+	\caption{Screenshot placeholder: signup form.}
+	\label{fig:guide_signup}
+\end{figure}
+
+\subsection{Registration Errors}
+\begin{normalsteps}
+	\item If the password is too weak, enter a stronger password.
+	\item If the password confirmation does not match, re-enter both password fields.
+	\item If the username is already taken, choose a different username.
+	\item Submit the corrected form.
+\end{normalsteps}
+
+\section{Login and Logout}
+\subsection{Log In}
+\begin{normalsteps}
+	\item Click \textit{Log In} from the public navigation menu.
+	\item Enter the username.
+	\item Enter the password.
+	\item Submit the login form.
+	\item After successful login, use the sidebar to access Categories, Upload CSV, AI Sorting, and Analytics.
+\end{normalsteps}
+
+\begin{figure}[h]
+	\centering
+	\vspace{4cm}
+	\caption{Screenshot placeholder: login form.}
+	\label{fig:guide_login}
+\end{figure}
+
+\subsection{Log Out}
+\begin{normalsteps}
+	\item Locate the logout button in the authenticated sidebar.
+	\item Click \textit{Logout}.
+	\item Confirm that the public navigation layout is shown again.
+\end{normalsteps}
+
+\section{Category Management}
+\subsection{Open Category Management}
+\begin{normalsteps}
+	\item Log in to the system.
+	\item Click \textit{Categories} in the sidebar.
+	\item Review the current category list.
+	\item Review any quick-add suggestions shown on the page.
+\end{normalsteps}
+
+\begin{figure}[h]
+	\centering
+	\vspace{4cm}
+	\caption{Screenshot placeholder: category management page.}
+	\label{fig:guide_categories}
+\end{figure}
+
+\subsection{Add a Custom Category}
+\begin{normalsteps}
+	\item Open the Categories page.
+	\item Type the category name in the add category field.
+	\item Click \textit{Add Category}.
+	\item Confirm that the category appears in the list.
+\end{normalsteps}
+
+\subsection{Add a Suggested Category}
+\begin{normalsteps}
+	\item Open the Categories page.
+	\item Locate the quick-add suggestions.
+	\item Click the suggestion that should be added to the personal category list.
+	\item Confirm that the selected suggestion now appears as a user category.
+\end{normalsteps}
+
+\subsection{Delete a Category}
+\begin{normalsteps}
+	\item Open the Categories page.
+	\item Locate the category to remove.
+	\item Click the delete button for that category.
+	\item Confirm that the category is removed from the list.
+\end{normalsteps}
+
+\section{CSV Upload Workflow}
+\subsection{Prepare the CSV File}
+The CSV file must include the required columns:
+\begin{itemize}
+	\item \texttt{Date}
+	\item \texttt{Description} or \texttt{Raw\_Description}
+	\item \texttt{Amount}
+\end{itemize}
+
+The file may also include optional columns such as \texttt{Notes}, \texttt{Comments}, \texttt{Merchant\_Name}, \texttt{Merchant}, \texttt{Transaction\_Type}, or \texttt{Type}. Optional columns improve AI classification because they provide more context.
+
+\subsection{Upload Transactions}
+\begin{normalsteps}
+	\item Log in to the system.
+	\item Click \textit{Upload CSV} in the sidebar.
+	\item Click the upload zone or drag the CSV file into it.
+	\item Confirm that the selected file name appears.
+	\item Click \textit{Upload \& Process}.
+	\item Wait for the upload to complete.
+	\item Review the import success message and transaction preview.
+\end{normalsteps}
+
+\begin{figure}[h]
+	\centering
+	\vspace{4cm}
+	\caption{Screenshot placeholder: CSV upload page.}
+	\label{fig:guide_upload}
+\end{figure}
+
+\subsection{Handle Upload Errors}
+\begin{normalsteps}
+	\item If the system rejects the file type, export or save the source file as CSV.
+	\item If a required column is missing, rename or add the required column.
+	\item If date rows fail, convert the date values to a supported date format.
+	\item If amount rows fail, remove unsupported characters and confirm the value is numeric.
+	\item Upload the corrected CSV file again.
+\end{normalsteps}
+
+\section{AI Sorting Workflow}
+\subsection{Open AI Sorting}
+\begin{normalsteps}
+	\item Ensure that categories have been created.
+	\item Ensure that a CSV file has been uploaded successfully.
+	\item Click \textit{AI Sorting} in the sidebar.
+	\item Review the Pending, Categorized, Total Transactions, and Categories counters.
+\end{normalsteps}
+
+\begin{figure}[h]
+	\centering
+	\vspace{4cm}
+	\caption{Screenshot placeholder: AI sorting page before processing.}
+	\label{fig:guide_ai_before}
+\end{figure}
+
+\subsection{Process Transactions with AI}
+\begin{normalsteps}
+	\item Open the AI Sorting page.
+	\item Confirm that there is at least one pending transaction.
+	\item Confirm that there is at least one category.
+	\item Click \textit{Process with AI}.
+	\item Wait for the processing result.
+	\item Review the success, warning, or error messages shown by the system.
+	\item Review the classification results table.
+\end{normalsteps}
+
+\begin{figure}[h]
+	\centering
+	\vspace{4cm}
+	\caption{Screenshot placeholder: AI classification results.}
+	\label{fig:guide_ai_results}
+\end{figure}
+
+\subsection{If Categories Are Missing}
+\begin{normalsteps}
+	\item If the AI Sorting page says categories are required, click \textit{Create Categories}.
+	\item Add the required category names.
+	\item Return to AI Sorting.
+	\item Run processing again.
+\end{normalsteps}
+
+\subsection{If No Transactions Are Found}
+\begin{normalsteps}
+	\item If the AI Sorting page says no transactions are found, open Upload CSV.
+	\item Upload a valid transaction file.
+	\item Return to AI Sorting.
+	\item Run processing again.
+\end{normalsteps}
+
+\section{Manual Correction Workflow}
+\subsection{Correct an Uncategorized Transaction}
+\begin{normalsteps}
+	\item Open the AI Sorting page after processing.
+	\item Locate a transaction marked \textit{Uncategorized}.
+	\item Open the category dropdown.
+	\item Select the correct category.
+	\item Wait for the row to update.
+	\item Confirm that the category tag replaces the dropdown.
+\end{normalsteps}
+
+\begin{figure}[h]
+	\centering
+	\vspace{4cm}
+	\caption{Screenshot placeholder: manual category correction.}
+	\label{fig:guide_manual_correction}
+\end{figure}
+
+\subsection{Accept an AI Suggestion}
+\begin{normalsteps}
+	\item Locate an uncategorized transaction that includes an AI suggestion.
+	\item Click the suggestion button.
+	\item Allow the system to create the category if it does not already exist.
+	\item Confirm that the transaction is updated.
+\end{normalsteps}
+
+\section{Analytics Dashboard Workflow}
+\subsection{Open Analytics}
+\begin{normalsteps}
+	\item Log in to the system.
+	\item Click \textit{Analytics} in the sidebar.
+	\item Wait for the Metabase dashboard iframe to load.
+	\item Review the available charts and dashboard summaries.
+\end{normalsteps}
+
+\begin{figure}[h]
+	\centering
+	\vspace{4cm}
+	\caption{Screenshot placeholder: embedded Metabase analytics dashboard.}
+	\label{fig:guide_analytics}
+\end{figure}
+
+\subsection{Handle Analytics Configuration Error}
+\begin{normalsteps}
+	\item If the analytics page shows a configuration error, contact the system administrator.
+	\item The administrator should verify the Metabase site URL.
+	\item The administrator should verify the Metabase embedding secret.
+	\item The administrator should verify that the dashboard ID exists in Metabase.
+	\item Refresh the Analytics page after configuration is corrected.
+\end{normalsteps}
+
+\section{Administrator Guide}
+\subsection{Access the Admin Panel}
+\begin{normalsteps}
+	\item Open the admin URL.
+	\item Enter administrator credentials.
+	\item Submit the login form.
+	\item Confirm that the Smart Sorter admin interface loads.
+\end{normalsteps}
+
+\begin{figure}[h]
+	\centering
+	\vspace{4cm}
+	\caption{Screenshot placeholder: administrator login page.}
+	\label{fig:guide_admin_login}
+\end{figure}
+
+\subsection{Manage Default Categories}
+\begin{normalsteps}
+	\item Log in as administrator.
+	\item Open the Default Categories model.
+	\item Add common category suggestions such as Groceries, Transport, Utilities, Dining, Shopping, Rent, or Transfers.
+	\item Save the default category.
+	\item Confirm that the suggestion appears on the user category screen if the user has not already added it.
+\end{normalsteps}
+
+\subsection{Review Transactions}
+\begin{normalsteps}
+	\item Log in as administrator.
+	\item Open the Transactions model.
+	\item Use filters for user, date, category, AI status, or transaction type.
+	\item Use search to locate a description, merchant, username, or note.
+	\item Review AI confidence and AI categorization status.
+\end{normalsteps}
+
+\begin{figure}[h]
+	\centering
+	\vspace{4cm}
+	\caption{Screenshot placeholder: transaction records in admin panel.}
+	\label{fig:guide_admin_transactions}
+\end{figure}
+
+\subsection{Deployment Configuration Checklist}
+\begin{normalsteps}
+	\item Confirm that PostgreSQL is configured for the final deployment environment.
+	\item Confirm that the Gemini API key is available through environment configuration.
+	\item Confirm that the Metabase site URL is configured.
+	\item Confirm that the Metabase embedding secret is configured.
+	\item Confirm that the required Metabase dashboard exists.
+	\item Confirm that administrator credentials are protected.
+	\item Confirm that debug settings and allowed hosts are appropriate for deployment.
+\end{normalsteps}
+
+\section{Recommended User Workflow}
+For best results, users should follow the workflow below:
+\begin{normalsteps}
+	\item Register or log in.
+	\item Create a complete category list.
+	\item Upload the CSV transaction file.
+	\item Review the import preview.
+	\item Run AI sorting.
+	\item Correct low-confidence or uncategorized rows.
+	\item View analytics.
+	\item Log out after use.
+\end{normalsteps}
+
+\section{Chapter Summary}
+This chapter explained the operational use of the Smart Transaction Sorter and Analytics System. The user guide follows the natural workflow of the application: account access, category setup, CSV upload, AI sorting, manual correction, analytics, and administration. By following these steps, a user can convert raw transaction exports into categorized financial insight while retaining control over category definitions and correction decisions.

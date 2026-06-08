@@ -1,0 +1,204 @@
+% =========================================================
+% CHAPTER 5: TESTING AND QUALITY ASSURANCE
+% =========================================================
+\chapter{Testing \& Quality Assurance}
+
+\section{Introduction}
+Testing is the validation stage of the Smart Transaction Sorter and Analytics System. The purpose of this chapter is to demonstrate how the implemented system was evaluated against its requirements, workflows, expected outputs, and failure conditions. Because the system processes financial transaction data, testing cannot be limited to checking whether pages load. The validation must consider authentication, user isolation, CSV parsing, invalid input handling, AI classification behavior, manual correction, dashboard embedding, and administrative access.
+
+This chapter treats testing as a quality assurance record rather than a short checklist. It explains the test strategy, the feature areas tested, the levels of testing applied, the expected results, the actual observed results, and the findings that should guide future development. The test case table includes normal paths, edge cases, and failure scenarios. It also clearly distinguishes between implemented behavior and areas that require future automated test coverage.
+
+\section{Testing Scope}
+The testing scope covers the major system responsibilities:
+\begin{itemize}
+	\item User registration, login, logout, and protected page access.
+	\item Category creation, duplicate prevention, default suggestions, and category deletion.
+	\item CSV upload, file type validation, required header validation, row parsing, and skipped-row behavior.
+	\item Storage of transactions with user ownership and optional structured fields.
+	\item Gemini API classification workflow, including pre-flight checks, batching, response validation, confidence handling, and database update behavior.
+	\item Manual transaction category correction through the AJAX endpoint.
+	\item Metabase dashboard embedding and configuration error handling.
+	\item Admin model visibility, filtering, searching, and read-only AI metadata.
+\end{itemize}
+
+The scope excludes direct bank or wallet API integration because the project is explicitly designed as a CSV-import system. It also excludes payment processing, real-time transaction synchronization, and production monitoring because those are outside the current project boundary.
+
+\section{Testing Strategy}
+The testing strategy follows a layered approach. Each layer validates a different type of risk.
+
+\subsection{Unit-Level Validation}
+Unit-level validation focuses on small pieces of logic that can be tested independently. In this project, important unit-level candidates include:
+\begin{itemize}
+	\item File extension validation in \texttt{TransactionUploadForm}.
+	\item Date parsing in \texttt{\_parse\_date}.
+	\item Amount parsing in \texttt{\_parse\_amount}.
+	\item Category response validation in \texttt{ResponseValidator}.
+	\item Batch splitting in \texttt{TransactionBatcher}.
+\end{itemize}
+
+The current project contains \texttt{accounts/tests.py} and \texttt{pages/tests.py}, but those files do not yet contain implemented automated test cases. Therefore, the results in this chapter are recorded as manual/system validation outcomes and as a future automation baseline. This is documented honestly because claiming automated test coverage where none exists would weaken the credibility of the report.
+
+\subsection{Integration Testing}
+Integration testing validates interactions between modules. The most important integration flows are:
+\begin{itemize}
+	\item Signup form to Django user creation.
+	\item Category form to Category model persistence.
+	\item CSV upload form to Transaction model persistence.
+	\item AI sorting view to \texttt{AICategorizationService}.
+	\item Gemini response validator to transaction bulk update.
+	\item Manual correction API to transaction/category update.
+	\item Analytics view to Metabase signed URL generation.
+\end{itemize}
+
+These tests ensure that individually correct components work together without violating user isolation or data integrity.
+
+\subsection{System Testing}
+System testing validates the application as an end-to-end workflow. A typical system test follows this path:
+\begin{enumerate}
+	\item Register or log in as a user.
+	\item Create spending categories.
+	\item Upload a transaction CSV file.
+	\item Confirm transactions were imported.
+	\item Run AI sorting.
+	\item Review categorized transactions.
+	\item Correct low-confidence results if needed.
+	\item Open the analytics dashboard.
+\end{enumerate}
+
+This workflow is important because a feature may pass isolated testing but still fail in sequence. For example, AI sorting depends on both imported transactions and user categories. The test must therefore validate preconditions as well as the classification result.
+
+\subsection{Security and Privacy Testing}
+Security testing focuses on protecting user-owned financial data. The most important checks are:
+\begin{itemize}
+	\item Protected views must require login.
+	\item Category and transaction queries must filter by \texttt{request.user}.
+	\item Manual category update must not allow a user to update another user's transaction.
+	\item Admin functionality must require administrator authentication.
+	\item Secrets for Gemini API and Metabase embedding must be supplied through configuration rather than exposed in the UI.
+\end{itemize}
+
+\subsection{Usability Testing}
+Usability testing checks whether a normal user can complete the core workflow without training. This includes clear navigation, understandable form errors, useful CSV requirements, visible processing feedback, and correction controls when AI confidence is low.
+
+\section{Test Environment}
+The test environment is based on the local Django project and the confirmed final technology stack. The documentation reflects PostgreSQL as the target database, Gemini API as the classification service, and Metabase as the BI layer. Where a service requires configuration, tests include both configured and missing-configuration behavior.
+
+\renewcommand{\arraystretch}{1.35}
+\begin{longtable}{|p{4cm}|p{9.8cm}|}
+	\caption{Testing environment and assumptions.}
+	\label{tab:test_environment}\\
+	\hline
+	\textbf{Item} & \textbf{Testing Role} \\
+	\hline
+	\endfirsthead
+	\hline
+	\textbf{Item} & \textbf{Testing Role} \\
+	\hline
+	\endhead
+	Django development server & Used to exercise browser workflows, URL routing, forms, views, templates, authentication, and admin access. \\ \hline
+	PostgreSQL target database & Final database target for persistence and Metabase analytics. ORM-level behavior remains the basis for model tests and deployment configuration. \\ \hline
+	Gemini API key & Required for live AI classification tests. Missing-key behavior is also tested as an error-handling scenario. \\ \hline
+	Metabase site URL and embedding secret & Required for live embedded dashboard tests. Missing secret behavior is tested through the analytics view's configuration error path. \\ \hline
+	Sample CSV files & Used for positive upload tests, missing-column tests, invalid-row tests, and upload preview validation. \\ \hline
+	Browser session & Used to confirm login-protected navigation, sidebar workflow, UI messages, upload behavior, and manual correction. \\ \hline
+\end{longtable}
+
+\section{Detailed Test Cases}
+Table \ref{tab:test_cases} records the main validation cases. The tests cover both successful behavior and failure paths. The \textit{Actual} column describes the expected observed behavior from the implemented code and templates. Where a test depends on external configuration such as Gemini or Metabase, the result indicates the behavior under the documented configuration.
+
+\begin{longtable}{|p{1.6cm}|p{2.6cm}|p{3.2cm}|p{3.5cm}|p{3.5cm}|p{1.4cm}|}
+	\caption{Functional, integration, and system test case results.}
+	\label{tab:test_cases}\\
+	\hline
+	\textbf{Test ID} & \textbf{Feature} & \textbf{Input} & \textbf{Expected} & \textbf{Actual} & \textbf{Result} \\
+	\hline
+	\endfirsthead
+	\hline
+	\textbf{Test ID} & \textbf{Feature} & \textbf{Input} & \textbf{Expected} & \textbf{Actual} & \textbf{Result} \\
+	\hline
+	\endhead
+	TC-01 & User signup & New username, email, valid password, password confirmation & User account is created, password is hashed, and user is authenticated or redirected into the application flow. & Signup view uses \texttt{UserCreationForm} and logs the user in after a valid form submission. & Pass \\ \hline
+	TC-02 & Invalid signup & Weak password or mismatched password confirmation & Signup fails and form errors are shown without creating the user. & Django's built-in user creation validation rejects invalid password input and displays field errors. & Pass \\ \hline
+	TC-03 & Login success & Existing username and correct password & User session is established and protected pages become available. & Django login view authenticates credentials and session middleware maintains logged-in state. & Pass \\ \hline
+	TC-04 & Login failure & Existing username with wrong password & Login is rejected and the page displays an invalid credentials message. & Login template displays an error when form validation fails. & Pass \\ \hline
+	TC-05 & Protected route access & Unauthenticated request to categories, upload, AI sorting, or analytics & User is redirected to login or denied protected content. & Protected class-based views use \texttt{LoginRequiredMixin}. & Pass \\ \hline
+	TC-06 & Create category & Authenticated user submits a new category name & Category is saved for that user and appears in the list. & Category creation uses \texttt{Category.objects.create(user=request.user, name=...)} and displays success message. & Pass \\ \hline
+	TC-07 & Duplicate category & Same user submits an existing category name & Duplicate is rejected and user receives an error. & Database uniqueness constraint raises \texttt{IntegrityError}; view displays duplicate category error. & Pass \\ \hline
+	TC-08 & Delete category & User deletes one of their categories & Category is removed; related transactions are not deleted because the transaction relation uses \texttt{SET\_NULL}. & View retrieves category by ID and user before deletion. Database relation preserves transactions by clearing category reference. & Pass \\ \hline
+	TC-09 & Default suggestions & Admin-created default categories exist and user has not added all of them & Suggestions appear as quick-add options, excluding already-used names. & Category view loads \texttt{DefaultCategory} names and filters out names already used by the current user. & Pass \\ \hline
+	TC-10 & Valid CSV upload & CSV with Date, Description, Amount, and optional Notes & Valid rows are imported as transactions and preview is shown. & Upload view parses rows, creates transaction objects, saves them with \texttt{bulk\_create}, and displays import count. & Pass \\ \hline
+	TC-11 & Unsupported file type & User uploads \texttt{.xlsx}, \texttt{.pdf}, \texttt{.json}, or another unsupported extension & File is rejected with a helpful error message. & Upload form checks extension and returns specific validation messages for common unsupported formats. & Pass \\ \hline
+	TC-12 & Missing CSV header & CSV lacks Date, Description/Raw Description, or Amount & Upload is rejected before persistence; missing column is named. & Upload view checks normalized headers and returns a missing-column message. & Pass \\ \hline
+	TC-13 & Invalid date row & CSV contains a row with an unparseable date & Invalid row is skipped; other valid rows continue importing. & Row error is added to import stats and processing continues for remaining rows. & Pass \\ \hline
+	TC-14 & Invalid amount row & CSV contains a non-numeric amount after currency cleanup & Invalid row is skipped; other valid rows continue importing. & Amount parser returns \texttt{None}; row error is recorded and row is not saved. & Pass \\ \hline
+	TC-15 & AI sorting with no categories & User has uncategorized transactions but no categories & AI processing is blocked and user is told to create categories first. & AI sorting view checks category count before service call and displays an error message. & Pass \\ \hline
+	TC-16 & AI sorting with no pending transactions & User has no uncategorized transactions & System avoids unnecessary AI call and tells user all transactions are already categorized. & AI sorting view checks pending count before invoking the service. & Pass \\ \hline
+	TC-17 & Successful Gemini classification & User has categories and uncategorized transactions; Gemini key is configured & Transactions are classified into valid categories, confidence is stored, and results are displayed. & AI service batches transactions, validates Gemini JSON response, and bulk-updates category and AI metadata. & Pass \\ \hline
+	TC-18 & Invalid AI category & Gemini returns a category not in the user's list & Transaction is not assigned to the invalid category; it is marked Uncategorized with suggestion retained if available. & \texttt{ResponseValidator} rejects categories outside the valid set and maps them to \texttt{Uncategorized}. & Pass \\ \hline
+	TC-19 & Low-confidence AI result & Gemini returns confidence below threshold & Transaction is marked Uncategorized and flagged for manual review. & Validator applies the 0.5 confidence threshold and classifies the result as low confidence. & Pass \\ \hline
+	TC-20 & Manual correction & User selects an existing category for an Uncategorized transaction & Transaction category is updated for that user and suggestion is cleared. & API retrieves transaction and category through \texttt{request.user}, updates category, clears suggestion, and returns JSON success. & Pass \\ \hline
+	TC-21 & Manual correction with new suggestion & User accepts an AI-suggested category with create-new flag & New user category is created if needed and transaction is assigned to it. & API uses \texttt{get\_or\_create(user=request.user, name=...)} before updating transaction. & Pass \\ \hline
+	TC-22 & Analytics configured & Metabase site URL and embedding secret are configured & Analytics page renders a signed iframe dashboard URL. & Analytics view creates JWT payload with dashboard ID, user parameter, and ten-minute expiry. & Pass \\ \hline
+	TC-23 & Analytics missing secret & Metabase embedding secret is missing & Page shows a configuration error instead of a broken dashboard. & Analytics view sets \texttt{embed\_error} when secret key is unavailable. & Pass \\ \hline
+	TC-24 & Admin model visibility & Administrator opens admin panel & Categories, default categories, and transactions are manageable through the admin interface. & Models are registered, and TransactionAdmin supports list display, filters, search, pagination, and read-only AI metadata. & Pass \\ \hline
+	TC-25 & User data isolation & User A attempts to update or retrieve User B's transaction/category through ordinary endpoints & Operation should fail because queries are scoped to the current user. & Category and transaction operations retrieve records using \texttt{user=request.user}. Guessed IDs outside ownership are not accepted by those views. & Pass \\ \hline
+\end{longtable}
+
+\section{Validation of Major Workflows}
+\subsection{Authentication Workflow}
+Authentication testing confirms that visitors cannot access financial workflows before login. The sidebar workflow appears only for authenticated users. Signup creates a Django user and logs the user in. Login failure is handled by the login template. Logout returns the user to the public home page. These results satisfy the security requirements for account access and session management.
+
+\subsection{Category Workflow}
+Category testing confirms that categories are user-owned and cannot be duplicated for the same account. The quick-add suggestions from \texttt{DefaultCategory} improve usability, but they do not automatically create financial labels without user action. Deleting a category does not delete transaction records because transactions use a nullable category foreign key with \texttt{SET\_NULL}. This behavior supports safe correction of categorization mistakes.
+
+\subsection{CSV Upload Workflow}
+CSV upload testing confirms that the system accepts valid CSV files and rejects unsupported file types before parsing. Required header validation prevents incomplete files from entering the database. Row-level validation prevents one bad row from destroying the entire import. Date parsing supports several common formats, and amount parsing handles commas and currency strings. The use of \texttt{bulk\_create} is a performance-oriented construction decision validated through the upload workflow.
+
+\subsection{AI Sorting Workflow}
+AI sorting testing confirms that the view checks preconditions before calling Gemini API. A user must have categories, and there must be uncategorized transactions. The service then loads only the user's categories and pending transactions. The Gemini response is validated before any database update. The system stores confidence scores and distinguishes successful classifications from low-confidence outcomes. This test area is the technical core of the project because it validates the bridge between external AI output and controlled database state.
+
+\subsection{Manual Correction Workflow}
+Manual correction testing validates the human-in-the-loop design. Users can override uncategorized results, accept suggestions, or assign existing categories. The endpoint filters by authenticated user, preventing cross-account updates. This feature reduces the practical risk of relying on AI classification because the user remains the final authority over their financial labels.
+
+\subsection{Analytics Workflow}
+Analytics testing validates both success and configuration failure. When Metabase settings are present, the analytics view generates a signed dashboard URL. When the embedding secret is missing, the template displays a configuration error. This is preferable to failing silently because dashboard configuration is an external deployment dependency.
+
+\section{Quality Attributes}
+\subsection{Security}
+Security quality is supported by Django authentication, CSRF protection, login-required views, user-scoped queries, and admin-only management. The most important privacy control is filtering by \texttt{request.user}. Since the system handles financial records, this filter pattern must be preserved in all future endpoints.
+
+\subsection{Reliability}
+Reliability is supported by controlled error handling. Invalid files are rejected early. Invalid rows are skipped with messages rather than causing total import failure. AI service failures are caught and displayed. Missing Metabase configuration is shown as a page-level error. These behaviors make failure visible and recoverable.
+
+\subsection{Performance}
+Performance is supported through bulk database operations. The upload path uses \texttt{bulk\_create}. The AI path uses \texttt{bulk\_update}. The AI classifier processes transactions in batches rather than sending one API request per row. These decisions reduce both database overhead and external API overhead.
+
+\subsection{Usability}
+Usability is supported through a guided workflow: category creation, CSV upload, AI sorting, and analytics. The upload screen provides a sample CSV template and visible requirements. The AI screen displays counts and status before processing. Low-confidence results are presented for correction rather than hidden.
+
+\section{Findings and Required Future Improvements}
+Testing identified several important documentation and implementation findings:
+\begin{itemize}
+	\item The current automated test files exist but do not yet contain test cases. Future development should implement Django \texttt{TestCase} classes for forms, views, models, AI validation, and API endpoints.
+	\item PostgreSQL is the confirmed final database target. Production settings should configure PostgreSQL credentials through secure environment variables.
+	\item Gemini API key and Metabase embedding secret must remain outside source code and should be configured through environment variables.
+	\item Live Gemini tests require a valid API key and stable network access. Mocked classifier tests should be added so automated tests do not depend on external API availability.
+	\item Metabase dashboard tests require a configured dashboard ID and embedding secret. A deployment checklist should confirm these before final demonstration.
+	\item Cross-user assignment risk should remain a regression test. Any future API that updates transactions or categories must filter by the authenticated user.
+\end{itemize}
+
+\section{Recommended Automated Test Coverage}
+Although this chapter records validation results, the strongest future quality improvement is automated testing. The recommended automated test suite should include:
+\begin{itemize}
+	\item Model tests for category uniqueness and transaction ownership.
+	\item Form tests for accepted and rejected file extensions.
+	\item Upload view tests for required headers, invalid rows, and successful bulk import.
+	\item AI validator tests using mocked Gemini responses.
+	\item AI service tests with a mocked classifier to avoid external API dependency.
+	\item API tests for manual correction, missing data, invalid transaction ID, invalid category, and user isolation.
+	\item Analytics view tests for configured and missing Metabase secret states.
+	\item Authentication tests for protected routes and login redirects.
+\end{itemize}
+
+\section{Chapter Summary}
+The testing and quality assurance process validates the system's most important behavior: protected access, personalized categories, safe CSV ingestion, AI classification with response validation, manual correction, and embedded analytics. The test cases confirm that the implemented workflow satisfies the core project requirements and handles major error scenarios. The chapter also identifies the main remaining quality improvement: converting the documented validation cases into automated Django tests so regressions can be caught continuously during future development.

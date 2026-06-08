@@ -29,6 +29,10 @@
 \usepackage[hidelinks]{hyperref} 
 \usepackage{titlesec}
 \usepackage{fancyhdr}
+\usepackage{xcolor}
+\usepackage{listings}
+
+\setlength{\parskip}{6pt}
 
 % --- Custom Columns & Lists ---
 \newcolumntype{L}{>{\bfseries\raggedright\arraybackslash}p{3.5cm}} 
@@ -37,6 +41,19 @@
 \setlist[normalsteps,1]{nosep, leftmargin=*, label=\arabic*., before=\vspace{-0.5\baselineskip}, after=\vspace{0.6\baselineskip}}
 \newlist{altsteps}{enumerate}{1}
 \setlist[altsteps,1]{nosep, leftmargin=1.5em, label=\roman*., before=\vspace{0pt}, after=\vspace{0.3\baselineskip}}
+
+\lstdefinestyle{codeblock}{
+    basicstyle=\ttfamily\small,
+    breaklines=true,
+    frame=single,
+    columns=fullflexible,
+    keepspaces=true,
+    showstringspaces=false,
+    tabsize=4,
+    backgroundcolor=\color{gray!5},
+    rulecolor=\color{gray!45}
+}
+\lstset{style=codeblock}
 
 % --- Fonts (Times New Roman) ---
 \usepackage{fontspec}
@@ -73,10 +90,10 @@ BoldItalicFont = timesbi
 {\normalfont\fontsize{12}{14}\bfseries}{\thesection}{1em}{}
 
 \titleformat{\subsection}
-{\normalfont\fontsize{12}{14}\bfseries}{\thesubsection}{1em}{}
+{\normalfont\fontsize{11}{13}\bfseries}{\thesubsection}{1em}{}
 
 \titleformat{\subsubsection}
-{\normalfont\fontsize{12}{14}\bfseries}{\thesubsubsection}{1em}{}
+{\normalfont\fontsize{11}{13}\bfseries}{\thesubsubsection}{1em}{}
 
 % --- Footer ---
 \pagestyle{fancy}
@@ -101,13 +118,20 @@ BoldItalicFont = timesbi
 	\newpage
 	\listoffigures
 	\newpage
+	\listoftables
+	\newpage
 	\pagenumbering{arabic}
 
     % --- CHAPTERS ---
     \input{chapters/01_introduction}
     \input{chapters/02_requirements}
     \input{chapters/03_usecase}
-    \input{chapters/04_process}
-    \input{chapters/05_design}
+    \input{chapters/04_construction}
+    \input{chapters/05_testing}
+    \input{chapters/06_user_guide}
+
+    \chapter*{References}
+    \addcontentsline{toc}{chapter}{References}
+    References will be finalized according to the department's required citation format.
 
 \end{document}
