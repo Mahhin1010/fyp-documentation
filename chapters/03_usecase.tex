@@ -4,8 +4,6 @@
 % =========================================================
 \chapter{System Design and Use Case Analysis}
 
-This chapter consolidates the behavioral and structural design of the Smart Transaction Sorter and Analytics System. It retains the use case analysis from the earlier documentation, then connects those use cases to the activity, sequence, database, class, and deployment views used to guide implementation. The purpose of this chapter is to show how the requirements become a coherent system model before the construction chapter explains the actual code.
-
 
 \section{Use Case Diagram}
 The Use Case Diagram provides a high-level overview of the system's interactions with the primary actors (User and System Administrator).
@@ -352,6 +350,37 @@ The Class Diagram (Figure \ref{fig:class_diagram}) depicts the static structure 
 \end{figure}
 
 In implementation, the class-level design is realized through Django models and service classes. User identity is provided by Django's authentication model. Category and Transaction are implemented as Django models in the pages application. CSV handling is implemented in the transaction upload view and form. AI sorting is implemented as a dedicated service module containing batching, classification, response validation, and orchestration responsibilities. Analytics is implemented through a Django view that generates a secure Metabase dashboard URL.
+
+\subsection{System Data Flow and Component Processing Lifecycle}
+To fully understand the runtime execution of the application, it is necessary to trace the lifecycle of transactional data as it traverses different modules, format boundaries, and processing states. The system's processing lifecycle is divided into four distinct phases: ingestion, semantic classification, persistence, and analytics visualization.
+
+\subsubsection{Data Ingestion and Schema Normalization}
+The ingestion phase begins when the client browser transmits a file upload request containing a raw transaction CSV file. This request is captured by the application's URL routing module and dispatched to the upload handler. Before reading the file stream, the handler performs form-level validations, checking that the file size is within safety limits and that the file extension is strictly .csv to prevent formatting issues. The system provides specific errors for common non-csv extensions like .xlsx, .pdf, or .json, suggesting the correct format to the user. Once validated, the byte stream is decoded using a UTF-8 character representation and passed to the built-in CSV dictionary reader.
+
+The parser reads the first row to identify the column headers. It maps the headers to the application's database fields using an internal alias mapping dictionary. This is necessary because different financial institutions use different naming conventions, such as Date or Posting Date, and Description or Memo. Once the columns are aligned, the system initializes an iterative parsing loop. Each row is checked for completeness; if cell values in the Date, Description, or Amount columns are missing, the row is skipped and logged as an error.
+
+At the same time, the Date values are converted using a sequence of date parser templates to ensure they conform to the database-compatible YYYY-MM-DD format. The values in the Amount column are normalized by removing currency markers (such as PKR, Rs., or commas) and casting the cleaned strings to fixed-point decimal values.
+
+\subsubsection{Semantic Classification and Machine Learning Inference}
+After the ingestion pipeline parses and normalizes the transactions, the user can run the AI sorting module. The classification service collects the uncategorized transaction records and retrieves the custom category list defined by the user. Uncategorized transactions are divided into batches of 25 to balance API payload size and network response latency.
+
+For each batch, the engine compiles a structured prompt containing the candidate labels and the batch of transactions. This structured prompt is passed to the Gemini API using the gemini-2.0-flash model. The model does not use exact keyword matching. Instead, it evaluates the semantic meaning of transaction text descriptions against the valid category taxonomy and returns a strictly formatted JSON array.
+
+The model computes a probability score for each category. If the highest score meets the 0.35 confidence threshold, the category is selected. If the confidence score falls below this safety line, or if the model suggests a category that is not in the user's defined list, the engine assigns the default label ``Uncategorized''. It preserves the model's top guess as a suggested category in the database for manual confirmation.
+
+\subsubsection{Database Relational Persistence}
+Once the classification engine completes processing for a batch of transactions, it passes the data objects to the database access layer. The system maps the assigned category names to primary key identifiers in the database.
+
+To avoid database locking delays, the application collects the categorized transaction records and performs a bulk update using the ORM. This bulk update modifies the category foreign key, the AI confidence score, the classification status flag, and the suggested category fields in a single database query.
+
+Relational integrity is protected through foreign key constraints: the category foreign key is configured with a null-on-delete constraint. This ensures that if a user deletes a custom category, the associated transactions revert to an uncategorized state rather than being deleted from the database.
+
+\subsubsection{Analytical Aggregation and Metabase Visualization}
+The final phase of the processing lifecycle is analytics presentation. When the user requests the dashboard view, the backend query engine aggregates the spending data.
+
+The system does not compile local charts using browser scripting. Instead, it requests a secure dashboard embedding from an external Metabase business intelligence server. The Django backend generates a JSON Web Token signed with a secret key using the HMAC-SHA256 algorithm. The token contains the active user's identification number as a parameter to ensure that the Metabase database queries are filtered specifically for that user.
+
+The client browser receives this secure token in an iframe source URL and requests the rendered dashboard. The Metabase server processes the dashboard layouts and delivers responsive, interactive charts directly into the user interface, ensuring complete data separation between different user profiles.
 
 \subsection{Interaction Design}
 The following sequence diagrams describe the most important workflows in the system. They remain unchanged because they still represent the core workflow accurately: authentication, category setup, CSV upload, AI processing, dashboard access, data deletion as a privacy requirement, and administration. The construction chapter later explains where each workflow is implemented in the codebase.

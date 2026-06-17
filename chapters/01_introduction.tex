@@ -72,8 +72,8 @@ This module contains the core data processing and classification logic.
 \subsection{BI \& Visualization Module}
 This module is responsible for presenting the final analytical output to the user.
 \begin{itemize}
-	\item \textbf{Data Aggregation Submodule:} This is a backend service that runs queries on the database to aggregate data for visualization (e.g., calculating total spending per category).
-	\item \textbf{Dashboard Rendering Submodule:} This is the frontend component that takes the aggregated data and uses a charting library to render the interactive BI dashboard.
+	\item \textbf{Token Authentication Submodule:} This is a backend service that compiles secure, signed JSON Web Tokens containing user session parameters using the HMAC-SHA256 algorithm.
+	\item \textbf{Dashboard Rendering Submodule:} This is the frontend component that renders the securely embedded Metabase dashboard inside an iframe, applying the token parameters to display user-scoped charts and statistics.
 \end{itemize}
 
 \section{Primary Actors}
@@ -90,7 +90,7 @@ The system is designed for a single primary actor:
 \end{itemize}
 
 \section{Tools \& Techniques}
-The project uses a modern, robust technology stack to ensure scalability and maintainability.
+The project uses a modern, stable technology stack to ensure scalability and maintainability.
 \begin{itemize}
 	\item \textbf{Backend Framework:} Python with the Django Framework is used to build the server-side logic, manage URLs, and handle database interactions.
 	\item \textbf{Database:} PostgreSQL is the confirmed database target for the final system because it supports reliable relational storage, indexing, and production deployment.

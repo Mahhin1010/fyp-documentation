@@ -3,9 +3,6 @@
 % =========================================================
 \chapter{User Guide}
 
-\section{Introduction}
-This chapter provides practical instructions for using the Smart Transaction Sorter and Analytics System. The guide is organized by role and workflow so that a user can move from account creation to transaction analytics without needing technical knowledge of Django, Gemini API, PostgreSQL, or Metabase. The main user role is the financial user who uploads and analyzes transactions. The secondary role is the system administrator who manages default suggestions and reviews system records through the admin interface.
-
 \section{User Roles}
 \subsection{Financial User}
 The financial user is the primary user of the system. This user can register, log in, create spending categories, upload CSV transaction files, run AI classification, review results, manually correct categories, and view analytics.
@@ -24,8 +21,8 @@ The system administrator manages the Django admin interface. The administrator c
 
 \begin{figure}[h]
 	\centering
-	\vspace{4cm}
-	\caption{Screenshot placeholder: public home page.}
+	\includegraphics[width=0.8\textwidth]{guide_home.png}
+	\caption{Public home page.}
 	\label{fig:guide_home}
 \end{figure}
 
@@ -41,10 +38,10 @@ The system administrator manages the Django admin interface. The administrator c
 	\item After successful signup, continue into the application workflow.
 \end{normalsteps}
 
-\begin{figure}[h]
+\begin{figure}[H]
 	\centering
-	\vspace{4cm}
-	\caption{Screenshot placeholder: signup form.}
+	\includegraphics[width=0.8\textwidth]{guide_signup.png}
+	\caption{Signup form.}
 	\label{fig:guide_signup}
 \end{figure}
 
@@ -56,6 +53,14 @@ The system administrator manages the Django admin interface. The administrator c
 	\item Submit the corrected form.
 \end{normalsteps}
 
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.8\textwidth]{reg_error.png}
+	\caption{Registration error.}
+	\label{fig:reg_error}
+\end{figure}
+
+
 \section{Login and Logout}
 \subsection{Log In}
 \begin{normalsteps}
@@ -66,10 +71,10 @@ The system administrator manages the Django admin interface. The administrator c
 	\item After successful login, use the sidebar to access Categories, Upload CSV, AI Sorting, and Analytics.
 \end{normalsteps}
 
-\begin{figure}[h]
+\begin{figure}[H]
 	\centering
-	\vspace{4cm}
-	\caption{Screenshot placeholder: login form.}
+	\includegraphics[width=0.8\textwidth]{guide_login.png}
+	\caption{Login form.}
 	\label{fig:guide_login}
 \end{figure}
 
@@ -89,10 +94,10 @@ The system administrator manages the Django admin interface. The administrator c
 	\item Review any quick-add suggestions shown on the page.
 \end{normalsteps}
 
-\begin{figure}[h]
+\begin{figure}[H]
 	\centering
-	\vspace{4cm}
-	\caption{Screenshot placeholder: category management page.}
+	\includegraphics[width=0.8\textwidth]{guide_categories.png}
+	\caption{Category management page.}
 	\label{fig:guide_categories}
 \end{figure}
 
@@ -142,10 +147,10 @@ The file may also include optional columns such as \texttt{Notes}, \texttt{Comme
 	\item Review the import success message and transaction preview.
 \end{normalsteps}
 
-\begin{figure}[h]
+\begin{figure}[H]
 	\centering
-	\vspace{4cm}
-	\caption{Screenshot placeholder: CSV upload page.}
+	\includegraphics[width=0.8\textwidth]{guide_upload.png}
+	\caption{CSV upload page.}
 	\label{fig:guide_upload}
 \end{figure}
 
@@ -167,10 +172,10 @@ The file may also include optional columns such as \texttt{Notes}, \texttt{Comme
 	\item Review the Pending, Categorized, Total Transactions, and Categories counters.
 \end{normalsteps}
 
-\begin{figure}[h]
+\begin{figure}[H]
 	\centering
-	\vspace{4cm}
-	\caption{Screenshot placeholder: AI sorting page before processing.}
+	\includegraphics[width=0.8\textwidth]{guide_ai_before.png}
+	\caption{AI sorting page before processing.}
 	\label{fig:guide_ai_before}
 \end{figure}
 
@@ -185,10 +190,10 @@ The file may also include optional columns such as \texttt{Notes}, \texttt{Comme
 	\item Review the classification results table.
 \end{normalsteps}
 
-\begin{figure}[h]
+\begin{figure}[H]
 	\centering
-	\vspace{4cm}
-	\caption{Screenshot placeholder: AI classification results.}
+	\includegraphics[width=0.8\textwidth]{guide_ai_results.jpeg}
+	\caption{AI classification results.}
 	\label{fig:guide_ai_results}
 \end{figure}
 
@@ -219,10 +224,10 @@ The file may also include optional columns such as \texttt{Notes}, \texttt{Comme
 	\item Confirm that the category tag replaces the dropdown.
 \end{normalsteps}
 
-\begin{figure}[h]
+\begin{figure}[H]
 	\centering
-	\vspace{4cm}
-	\caption{Screenshot placeholder: manual category correction.}
+	\includegraphics[width=0.8\textwidth]{guide_manual_correction.jpeg}
+	\caption{Manual category correction.}
 	\label{fig:guide_manual_correction}
 \end{figure}
 
@@ -243,10 +248,10 @@ The file may also include optional columns such as \texttt{Notes}, \texttt{Comme
 	\item Review the available charts and dashboard summaries.
 \end{normalsteps}
 
-\begin{figure}[h]
+\begin{figure}[H]
 	\centering
-	\vspace{4cm}
-	\caption{Screenshot placeholder: embedded Metabase analytics dashboard.}
+	\includegraphics[width=0.8\textwidth]{guide_analytics.jpeg}
+	\caption{Embedded Metabase analytics dashboard.}
 	\label{fig:guide_analytics}
 \end{figure}
 
@@ -268,10 +273,10 @@ The file may also include optional columns such as \texttt{Notes}, \texttt{Comme
 	\item Confirm that the Smart Sorter admin interface loads.
 \end{normalsteps}
 
-\begin{figure}[h]
+\begin{figure}[H]
 	\centering
-	\vspace{4cm}
-	\caption{Screenshot placeholder: administrator login page.}
+	\includegraphics[width=0.8\textwidth]{guide_admin_login.jpeg}
+	\caption{Administrator login page.}
 	\label{fig:guide_admin_login}
 \end{figure}
 
@@ -293,10 +298,10 @@ The file may also include optional columns such as \texttt{Notes}, \texttt{Comme
 	\item Review AI confidence and AI categorization status.
 \end{normalsteps}
 
-\begin{figure}[h]
+\begin{figure}[H]
 	\centering
-	\vspace{4cm}
-	\caption{Screenshot placeholder: transaction records in admin panel.}
+	\includegraphics[width=0.8\textwidth]{guide_admin_transactions.jpeg}
+	\caption{Transaction records in admin panel.}
 	\label{fig:guide_admin_transactions}
 \end{figure}
 
@@ -324,5 +329,3 @@ For best results, users should follow the workflow below:
 	\item Log out after use.
 \end{normalsteps}
 
-\section{Chapter Summary}
-This chapter explained the operational use of the Smart Transaction Sorter and Analytics System. The user guide follows the natural workflow of the application: account access, category setup, CSV upload, AI sorting, manual correction, analytics, and administration. By following these steps, a user can convert raw transaction exports into categorized financial insight while retaining control over category definitions and correction decisions.

@@ -234,28 +234,85 @@ The system interfaces with the following software components:
 	\item \textbf{Metabase:} Business Intelligence tool used for dashboard visualization and embedded analytics.
 \end{itemize}
 
-\section{Requirements Traceability}
-Traceability connects the requirements in this chapter with the implemented application features described later in the construction chapter. This is important because the project is not only a design proposal; it is a working Django-based system whose implementation can be mapped back to the stated functional and non-functional requirements.
+\section{Detailed Functional Requirement Scenarios and Edge Cases}
+To ensure the system remains stable under varied real-world usage, the core functional requirements must be evaluated against realistic data flows, alternative execution paths, and exception boundaries. This section outlines the sequential operations, alternative states, and failure recovery protocols for the four primary processing hubs of the application.
 
-\renewcommand{\arraystretch}{1.35}
-\begin{longtable}{|p{2.6cm}|p{4.2cm}|p{6.9cm}|}
-	\caption{Requirement-to-feature traceability matrix.}
-	\label{tab:req_traceability}\\
-	\hline
-	\textbf{Requirement IDs} & \textbf{Feature Area} & \textbf{Implemented or Documented Realization} \\
-	\hline
-	\endfirsthead
-	\hline
-	\textbf{Requirement IDs} & \textbf{Feature Area} & \textbf{Implemented or Documented Realization} \\
-	\hline
-	\endhead
-	SRS-1--SRS-7 & Authentication and session management & Django's built-in authentication views, the custom signup view, session middleware, CSRF protection, and password validation support account creation, login, logout, and protected access to application pages. \\ \hline
-	SRS-8--SRS-13 & Category management & The Category model links every category to a user and enforces uniqueness through a user-name constraint. The category screen allows users to add and delete categories and displays admin-managed default suggestions. \\ \hline
-	SRS-14--SRS-19 & CSV ingestion and validation & The transaction upload form accepts CSV files only, validates required columns, maps optional fields, parses dates and amounts, skips invalid rows, and stores valid transactions in bulk. \\ \hline
-	SRS-20--SRS-24 & Intelligent sorting and persistence & Gemini API is used through a batching and validation service. The system sends transaction context and user categories, validates the JSON response, applies the confidence threshold, and persists category assignments through bulk updates. \\ \hline
-	SRS-25--SRS-28 & Analytics dashboard & Metabase provides the BI layer. Django generates a signed dashboard embedding URL so that authenticated users can view visual analytics inside the application interface. \\ \hline
-	SRS-29--SRS-33 & Administration & The Django admin interface, styled through Jazzmin, exposes users, categories, default categories, and transactions to authorized administrators for management and review. \\ \hline
-	NFR Security & Data protection and isolation & User-owned Category and Transaction records include foreign keys to the authenticated user. Application views filter by request.user so one user's uploaded transactions and categories are not returned to another user. \\ \hline
-	NFR Reliability & Error handling and recoverability & CSV errors are collected per row instead of stopping the entire upload. AI errors are reported through user-facing messages, and raw uploaded transactions remain available for retry if classification fails. \\ \hline
-	NFR Performance & Efficient processing & Bulk insertion is used for uploaded transactions, and bulk update is used after classification. This avoids row-by-row database saves during high-volume CSV processing. \\ \hline
-\end{longtable}
+\subsection{Sign Up and Authentication Scenarios}
+The user onboarding process represents the initial security gate of the application. To protect personal financial data, registration and authentication must enforce strict boundaries at the database and application levels.
+\subsubsection{Sequential Processing Logic}
+The registration sequence is initiated when a visitor requests the signup form. The Django backend generates a unique Cross-Site Request Forgery (CSRF) token, binds it to the session, and renders the form fields. The user must provide a username, a unique email address, a password, and a password confirmation. Upon submission, the backend performs form-level checks:
+\begin{enumerate}
+	\item \textbf{Syntax Verification:} The email address is checked against a standard format regex pattern to confirm structural validity.
+	\item \textbf{Duplicate Auditing:} The database is queried to ensure the email address does not match any existing record.
+	\item \textbf{Complexity Evaluation:} The password string is audited against complexity rules, verifying it contains at least eight characters, including numerical and alphabetical values.
+	\item \textbf{Password Matching:} The password and confirmation strings are checked for character-for-character equality.
+\end{enumerate}
+If all validations pass, the Django authentication module hashes the password string using the PBKDF2 algorithm with a SHA-256 hash. The system opens a database transaction, saves the user record, generates a personalized default category set (e.g., Utilities, Groceries, Transport), commits the transaction, and redirects the user to the login screen.
+
+\subsubsection{Alternate Courses and Exception Handling}
+During registration, input errors or system faults can redirect the execution flow:
+\begin{itemize}
+	\item \textbf{Duplicate Account Conflict (Alternate Course):} If the database query identifies an existing user account registered under the submitted email, the system halts the creation process. The backend raises a form validation error, re-renders the registration page, and displays a notice stating that the email address is already in use.
+	\item \textbf{Password Complexity Failure (Alternate Course):} If the password contains fewer than eight characters or fails complexity rules, the validation script blocks database entry. The system flags the password field and displays a message explaining the length and character requirements.
+	\item \textbf{Database Transaction Timeout (Exception Path):} In the event of high database lock contention or server latency, the registration write operation may time out. The application catches the database transaction error, rolls back any partial database updates, logs the system error, and redirects the user to a page explaining that the server is temporarily busy, prompting them to try again.
+\end{itemize}
+
+\subsection{CSV Ingestion and Parsing Scenarios}
+The ingestion pipeline converts external financial statement files into internal database records. Since banks and wallet services generate statement CSVs with different layouts, the ingestion service must handle files with structural variations.
+\subsubsection{Sequential Processing Logic}
+When an authenticated user requests a file upload, the application validates the file extension and size before opening the data stream. If the file passes the initial boundaries, the Pandas library is initialized to read the CSV content. The sequence executes as follows:
+\begin{enumerate}
+	\item \textbf{File Stream Buffering:} The uploaded file is read into memory as a byte stream, avoiding disk-write latency.
+	\item \textbf{Header Extraction:} The parser reads the first row to identify the columns and matches them against the expected fields (Date, Description, and Amount) using case-insensitive mapping and predefined aliases.
+	\item \textbf{Data Cleaning:} The system loops through each row in the dataframe. It trims trailing spaces from descriptions and removes currency symbols (such as Rs. or PKR) and thousands-separator commas from the amount values.
+	\item \textbf{Transaction Batching:} The cleaned records are converted into transaction model instances and appended to a list for bulk database insertion.
+\end{enumerate}
+Once the batch list is fully populated, the Django ORM executes a single bulk insert operation to save the transactions.
+
+\subsubsection{Alternate Courses and Exception Handling}
+Data parsing must account for incomplete files, irregular cell contents, and format mismatches:
+\begin{itemize}
+	\item \textbf{Missing Column Headers (Alternate Course):} If the header row lacks one of the required columns (Date, Description, or Amount) and no alias matches are found, the Pandas parser halts. The system aborts the upload, discards the buffered stream, and renders a message stating which mandatory column is missing.
+	\item \textbf{Non-Numeric Amount Formatting (Alternate Course):} When a row contains non-numeric text in the Amount column (such as ``N/A'' or ``FREE''), the numeric coercion module converts the entry to a null value. The row filter detects this null value and skips the row, recording it in the import log while continuing to process the other rows.
+	\item \textbf{Encoding Mismatch Exception (Exception Path):} Financial statements may be encoded in UTF-8 or legacy formats like ISO-8859-1. If the parser encounters characters it cannot read, a decoding exception is raised. The application catches the exception, closes the stream, and displays a message asking the user to save the CSV in standard UTF-8 format.
+\end{itemize}
+
+\subsection{AI Classification and Inference Scenarios}
+The Gemini API classification engine automates the assignment of spending categories using semantic natural language processing.
+\subsubsection{Sequential Processing Logic}
+When the user triggers the AI sorting function, the backend verifies that the user has custom categories and that there are uncategorized transactions. The classification sequence proceeds as follows:
+\begin{enumerate}
+	\item \textbf{Taxonomy Loading:} The system fetches the list of custom categories defined by the user.
+	\item \textbf{Transaction Batching:} Uncategorized transactions are divided into batches of 25 to balance API payload size and network response latency.
+	\item \textbf{Prompt Construction:} The engine compiles a structured prompt containing the candidate labels and the batch of transactions.
+	\item \textbf{Gemini Classification:} The text descriptions are evaluated against the user's category list. The Gemini model calculates a confidence score for each category.
+	\item \textbf{Confidence Assessment:} The engine checks the highest confidence score against the 0.35 safety threshold. If it exceeds the threshold, the category is assigned.
+\end{enumerate}
+The database is then updated with the category assignments.
+
+\subsubsection{Alternate Courses and Exception Handling}
+The AI sorting pipeline must handle low-confidence results and service interruptions:
+\begin{itemize}
+	\item \textbf{Low-Confidence Bypass (Alternate Course):} If the highest confidence score for a transaction falls below 0.35, the engine flags the prediction as uncertain. The system assigns the default label ``Uncategorized'' and stores the model's top guess as a suggestion, allowing the user to review the record later.
+	\item \textbf{Empty Taxonomy Interception (Alternate Course):} If a user runs the classification engine without defining any categories, the application bypasses model execution. It marks all pending rows as ``Uncategorized'' and notifies the user to configure custom categories.
+	\item \textbf{API Request Timeout (Exception Path):} High network latency or API rate limits may cause classification requests to time out. The application is configured to retry the request once. If the retry fails, the engine halts, rolls back the batch update, and displays a warning to the user, ensuring that no partially sorted records are left in the database.
+\end{itemize}
+
+\subsection{Dashboard Aggregation and Visualization Scenarios}
+The analytics module provides secure data visualization dashboards using embedded Metabase resources.
+\subsubsection{Sequential Processing Logic}
+When a user accesses the dashboard, the application generates a secure, token-authorized iframe. The sequence runs as follows:
+\begin{enumerate}
+	\item \textbf{Configuration Audit:} The system checks the environment configuration settings to retrieve the Metabase site URL and embedding secret key.
+	\item \textbf{Token Signature:} The backend compiles a JSON Web Token signed with the HMAC-SHA256 algorithm. The token contains the active user's identification number as a query filter parameter.
+	\item \textbf{URL Construction:} The system appends the signed token to the Metabase dashboard site path, creating a secure embedding URL.
+	\item \textbf{Frontend Embedding:} The Django template receives the URL and renders the Metabase dashboard inside an iframe within a glassmorphic dashboard container. The Metabase server filters the database queries dynamically using the user ID parameter.
+\end{enumerate}
+
+\subsection{Alternate Courses and Exception Handling}
+The dashboard aggregation system must handle empty datasets and authorization issues:
+\begin{itemize}
+	\item \textbf{Missing Key Interception (Alternate Course):} If the Metabase secret key is missing from environment configurations, the dashboard view intercepts the error. It blocks the iframe generation and renders a warning banner explaining how to configure the environment settings.
+	\item \textbf{Expired Session Token (Alternate Course):} The JSON Web Token contains an expiration timestamp set to 10 minutes. If the user keeps the dashboard open past this limit, Metabase displays a signature expired error. Refreshing the dashboard page generates a fresh token, restoring the view.
+	\item \textbf{Zero Record State (Exception Path):} If the user has no transactions, the database queries return empty sets. Metabase displays empty visual states on the dashboard, explaining that data needs to be uploaded to populate the charts.
+\end{itemize}
