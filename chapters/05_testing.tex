@@ -24,7 +24,7 @@ Unit testing focuses on verifying the smallest testable components of the applic
 
 Ingestion boundary checks focus on validating the behavior of the CSV parsing module when reading file streams. The tests verify that the parser reads row data, handles varying delimiters, and discards corrupt rows without throwing unhandled exceptions.
 
-Model validation constraints are tested by attempting to write records that violate database invariants, such as duplicate category names for the same user or invalid foreign keys. The AI confidence filtering logic is tested by feeding mock inference scores into the validator to confirm that any score below the 0.35 threshold is mapped to the default Uncategorized label.
+Model validation constraints are tested by attempting to write records that violate database invariants, such as duplicate category names for the same user or invalid foreign keys. The AI confidence filtering logic is tested by feeding mock inference scores into the validator to confirm that any score below the 0.5 threshold is mapped to the default Uncategorized label.
 
 \subsection{Integration Testing Framework}
 Integration testing evaluates the communication paths and data compliance interfaces between completely separate application modules. The core goal is to verify that data moving across module boundaries retains its structural integrity and does not cause silent errors. Integration validation paths confirm that: Pipeline Data Flow, Persistence Transactions, and API Delivery Metrics.
@@ -39,6 +39,16 @@ System-level User Acceptance Testing evaluates the end-to-end application workfl
 User sessions were tested across multiple browsers, including Google Chrome, Microsoft Edge, and Safari, to confirm that layout styling remains consistent and responsive. Form submissions were evaluated by intentionally entering invalid inputs to verify that error messages are readable and helpful.
 
 The end-to-end testing confirmed that the application flows logically. The navigation transition from statement upload to AI sorting, manual correction, and chart viewing operates without interface lag or broken links.
+
+\subsection{Automated Test Suite Execution}
+To ensure continuous code quality and prevent regression errors, the functional and integration tests are organized into an automated test suite. The Django test runner is utilized to execute these test cases within an isolated test environment, utilizing a temporary in-memory database to prevent test contamination.
+
+The automated test suite consists of 25 comprehensive test cases covering authentication logic, category management, CSV parsing validations, AI service mock integrations, AJAX correction API endpoints, Metabase JWT signing parameters, and multi-user isolation boundaries. The automated test suite is executed by running the following command from the project root:
+\begin{lstlisting}[language=bash]
+python manage.py test
+\end{lstlisting}
+
+During verification, the automated test suite executed all 25 test cases successfully, registering zero errors or failures. The remaining 15 manual test scenarios (such as cross-browser layouts, session safety redirects on back button usage, and network drop recovery) were validated through manual testing procedures to complete the verification coverage.
 
 \section{Performance Evaluation and Benchmarking Under Load}
 \subsection{High-Volume Processing Metrics}
@@ -162,7 +172,7 @@ This section tests the contextual mapping logic and safety thresholds of the Gem
 	\endhead
 	TC-14 & AI Sorting & Normal Path & Process a statement row containing the descriptive unmapped note text string: ``E-Payment Electric Bill''. & Gemini model evaluates language semantics and contextually maps the row to user category ``Utilities''. & Transaction categorized accurately under Utilities. & Pass \\ \hline
 	TC-15 & AI Sorting & Normal Path & Process a statement row containing the descriptive unmapped note text string: ``Uber Ride Rawalpindi''. & Model flags semantic match with travel, bypasses strict matching rules, and assigns it to ``Transport''. & Transaction mapped contextually under Transport. & Pass \\ \hline
-	TC-16 & AI Sorting & Alternate Scenario & Process a statement row containing an ambiguous note string with no semantic meaning: ``XYZ random character''. & Inference yields low confidence scores across all options; confidence threshold ($<$0.35) forces default tag ``Uncategorized''. & Row bypasses incorrect label; saved as Uncategorized safely. & Pass \\ \hline
+	TC-16 & AI Sorting & Alternate Scenario & Process a statement row containing an ambiguous note string with no semantic meaning: ``XYZ random character''. & Inference yields low confidence scores across all options; confidence threshold ($<$0.5) forces default tag ``Uncategorized''. & Row bypasses incorrect label; saved as Uncategorized safely. & Pass \\ \hline
 \end{longtable}
 \endgroup
 

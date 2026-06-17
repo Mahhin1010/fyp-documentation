@@ -260,11 +260,11 @@ During registration, input errors or system faults can redirect the execution fl
 \subsection{CSV Ingestion and Parsing Scenarios}
 The ingestion pipeline converts external financial statement files into internal database records. Since banks and wallet services generate statement CSVs with different layouts, the ingestion service must handle files with structural variations.
 \subsubsection{Sequential Processing Logic}
-When an authenticated user requests a file upload, the application validates the file extension and size before opening the data stream. If the file passes the initial boundaries, the Pandas library is initialized to read the CSV content. The sequence executes as follows:
+When an authenticated user requests a file upload, the application validates the file extension, selection of ingestion pathway, and size before opening the data stream. The ingestion pipeline supports uploading multiple CSV files simultaneously. If the files pass the initial boundaries, the Pandas library is initialized to read the CSV content of each file. The sequence executes as follows:
 \begin{enumerate}
-	\item \textbf{File Stream Buffering:} The uploaded file is read into memory as a byte stream, avoiding disk-write latency.
-	\item \textbf{Header Extraction:} The parser reads the first row to identify the columns and matches them against the expected fields (Date, Description, and Amount) using case-insensitive mapping and predefined aliases.
-	\item \textbf{Data Cleaning:} The system loops through each row in the dataframe. It trims trailing spaces from descriptions and removes currency symbols (such as Rs. or PKR) and thousands-separator commas from the amount values.
+	\item \textbf{File Stream Buffering:} The uploaded files are read into memory as byte streams, avoiding disk-write latency.
+	\item \textbf{Pathway Routing and Header Extraction:} The system routes each file stream based on the selected import pathway (Generic CSV Template or NayaPay Mobile Statement). For standard files, the parser matches columns against expected fields (Date, Description, and Amount) using case-insensitive mapping and predefined aliases. For NayaPay statements, the parser automatically maps specialized wallet export fields.
+	\item \textbf{Data Cleaning:} The system loops through each row in the dataframe. It trims trailing spaces from descriptions, extracts transaction references, and removes currency symbols (such as Rs. or PKR) and thousands-separator commas from the amount values.
 	\item \textbf{Transaction Batching:} The cleaned records are converted into transaction model instances and appended to a list for bulk database insertion.
 \end{enumerate}
 Once the batch list is fully populated, the Django ORM executes a single bulk insert operation to save the transactions.
@@ -286,14 +286,14 @@ When the user triggers the AI sorting function, the backend verifies that the us
 	\item \textbf{Transaction Batching:} Uncategorized transactions are divided into batches of 25 to balance API payload size and network response latency.
 	\item \textbf{Prompt Construction:} The engine compiles a structured prompt containing the candidate labels and the batch of transactions.
 	\item \textbf{Gemini Classification:} The text descriptions are evaluated against the user's category list. The Gemini model calculates a confidence score for each category.
-	\item \textbf{Confidence Assessment:} The engine checks the highest confidence score against the 0.35 safety threshold. If it exceeds the threshold, the category is assigned.
+	\item \textbf{Confidence Assessment:} The engine checks the highest confidence score against the 0.5 safety threshold. If it exceeds the threshold, the category is assigned.
 \end{enumerate}
 The database is then updated with the category assignments.
 
 \subsubsection{Alternate Courses and Exception Handling}
 The AI sorting pipeline must handle low-confidence results and service interruptions:
 \begin{itemize}
-	\item \textbf{Low-Confidence Bypass (Alternate Course):} If the highest confidence score for a transaction falls below 0.35, the engine flags the prediction as uncertain. The system assigns the default label ``Uncategorized'' and stores the model's top guess as a suggestion, allowing the user to review the record later.
+	\item \textbf{Low-Confidence Bypass (Alternate Course):} If the highest confidence score for a transaction falls below 0.5, the engine flags the prediction as uncertain. The system assigns the default label ``Uncategorized'' and stores the model's top guess as a suggestion, allowing the user to review the record later.
 	\item \textbf{Empty Taxonomy Interception (Alternate Course):} If a user runs the classification engine without defining any categories, the application bypasses model execution. It marks all pending rows as ``Uncategorized'' and notifies the user to configure custom categories.
 	\item \textbf{API Request Timeout (Exception Path):} High network latency or API rate limits may cause classification requests to time out. The application is configured to retry the request once. If the retry fails, the engine halts, rolls back the batch update, and displays a warning to the user, ensuring that no partially sorted records are left in the database.
 \end{itemize}

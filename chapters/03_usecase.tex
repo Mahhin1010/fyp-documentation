@@ -135,18 +135,18 @@ The Use Case Diagram provides a high-level overview of the system's interactions
 	Use Case ID & 3.1 \\ \hline
 	Use Case Name & Upload Transaction CSV \\ \hline
 	Actor & User \\ \hline
-	Description & User uploads a raw CSV file from their bank/wallet for processing. \\ \hline
-	Preconditions & User is logged in and has a valid CSV file. \\ \hline
-	Postconditions & File is parsed, and all transactions are saved to the database with an 'Uncategorized' status. \\ \hline
+	Description & User uploads raw CSV file(s) (either Standard Template or NayaPay format) for processing. \\ \hline
+	Preconditions & User is logged in and has valid CSV file(s). \\ \hline
+	Postconditions & Files are parsed, and all unique transactions are saved to the database with an 'Uncategorized' status. \\ \hline
 	Priority & High \\ \hline
 	Normal Course & 
 	\begin{normalsteps}
 		\item User navigates to "Upload" section.
-		\item User selects a file from local device.
-		\item System scans file type.
-		\item System validates required columns (Date, Description, Amount).
-		\item System parses the file and saves all transactions to the database.
-		\item System confirms successful upload.
+		\item User selects the ingestion pathway (Standard CSV or NayaPay Statement).
+		\item User selects one or more CSV files from local device.
+		\item System scans file types and validates columns for the selected pathway.
+		\item System parses the files and saves all unique transactions to the database.
+		\item System confirms successful upload and skips duplicate rows.
 	\end{normalsteps} \\ \hline
 	Alternative Courses & 
 	\textbf{3a. Invalid File Format:} 
@@ -156,7 +156,7 @@ The Use Case Diagram provides a high-level overview of the system's interactions
 	\end{altsteps}
 	\textbf{4a. Missing Columns:} 
 	\begin{altsteps}
-		\item System validation fails (missing "Amount" column).
+		\item System validation fails (missing columns).
 		\item System rejects file.
 		\item System tells User exactly which column is missing.
 	\end{altsteps} \\ \hline
@@ -355,7 +355,7 @@ In implementation, the class-level design is realized through Django models and 
 To fully understand the runtime execution of the application, it is necessary to trace the lifecycle of transactional data as it traverses different modules, format boundaries, and processing states. The system's processing lifecycle is divided into four distinct phases: ingestion, semantic classification, persistence, and analytics visualization.
 
 \subsubsection{Data Ingestion and Schema Normalization}
-The ingestion phase begins when the client browser transmits a file upload request containing a raw transaction CSV file. This request is captured by the application's URL routing module and dispatched to the upload handler. Before reading the file stream, the handler performs form-level validations, checking that the file size is within safety limits and that the file extension is strictly .csv to prevent formatting issues. The system provides specific errors for common non-csv extensions like .xlsx, .pdf, or .json, suggesting the correct format to the user. Once validated, the byte stream is decoded using a UTF-8 character representation and passed to the built-in CSV dictionary reader.
+The ingestion phase begins when the client browser transmits a file upload request containing raw transaction CSV file(s) along with the selected ingestion pathway (Standard Template or NayaPay Statement). This request is captured by the application's URL routing module and dispatched to the upload handler. Before reading the file streams, the handler performs form-level validations, checking that the total file size is within safety limits and that all file extensions are strictly .csv to prevent formatting issues. The system provides specific errors for common non-csv extensions like .xlsx, .pdf, or .json, suggesting the correct format to the user. Once validated, each byte stream is decoded using a UTF-8 character representation and passed to the corresponding ingestion parser.
 
 The parser reads the first row to identify the column headers. It maps the headers to the application's database fields using an internal alias mapping dictionary. This is necessary because different financial institutions use different naming conventions, such as Date or Posting Date, and Description or Memo. Once the columns are aligned, the system initializes an iterative parsing loop. Each row is checked for completeness; if cell values in the Date, Description, or Amount columns are missing, the row is skipped and logged as an error.
 
@@ -364,9 +364,9 @@ At the same time, the Date values are converted using a sequence of date parser 
 \subsubsection{Semantic Classification and Machine Learning Inference}
 After the ingestion pipeline parses and normalizes the transactions, the user can run the AI sorting module. The classification service collects the uncategorized transaction records and retrieves the custom category list defined by the user. Uncategorized transactions are divided into batches of 25 to balance API payload size and network response latency.
 
-For each batch, the engine compiles a structured prompt containing the candidate labels and the batch of transactions. This structured prompt is passed to the Gemini API using the gemini-2.0-flash model. The model does not use exact keyword matching. Instead, it evaluates the semantic meaning of transaction text descriptions against the valid category taxonomy and returns a strictly formatted JSON array.
+For each batch, the engine compiles a structured prompt containing the candidate labels and the batch of transactions. This structured prompt is passed to the Gemini API using the Gemini Flash model series~\cite{google2023gemini}. The model does not use exact keyword matching. Instead, it evaluates the semantic meaning of transaction text descriptions against the valid category taxonomy and returns a strictly formatted JSON array.
 
-The model computes a probability score for each category. If the highest score meets the 0.35 confidence threshold, the category is selected. If the confidence score falls below this safety line, or if the model suggests a category that is not in the user's defined list, the engine assigns the default label ``Uncategorized''. It preserves the model's top guess as a suggested category in the database for manual confirmation.
+The model computes a probability score for each category. If the highest score meets the 0.5 confidence threshold, the category is selected. If the confidence score falls below this safety line, or if the model suggests a category that is not in the user's defined list, the engine assigns the default label ``Uncategorized''. It preserves the model's top guess as a suggested category in the database for manual confirmation.
 
 \subsubsection{Database Relational Persistence}
 Once the classification engine completes processing for a batch of transactions, it passes the data objects to the database access layer. The system maps the assigned category names to primary key identifiers in the database.

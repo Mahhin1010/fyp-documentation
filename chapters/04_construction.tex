@@ -20,14 +20,14 @@ The storage read speeds of the 256 GB SSD further reduced startup latency. Loadi
 
 \section{Core Software Environment and Clean Framework Selection}
 \subsection{Runtime Configurations and IDE Setup}
-The software stack consists of open-source Python tools chosen for stability in web development and data processing workflows. The host system ran Windows 11 Home Edition, configured with Python version 3.10.11. Code development and debugging were conducted in Visual Studio Code version 1.85, using Pylance and Django development extensions for structural validation.
+The software stack consists of open-source Python tools chosen for stability in web development and data processing workflows. The host system ran Windows 11 Home Edition, configured with Python version 3.14.0. Code development and debugging were conducted in Visual Studio Code version 1.85, using Pylance and Django development extensions for structural validation.
 
 Operating system environment variables were used to manage configuration parameters, such as the Gemini API credentials and Metabase embedding parameters. Storing configuration parameters outside the workspace prevented sensitive keys from being exposed in the repository and ensured that the codebase remained lightweight and portable.
 
 The IDE environment was configured with automatic formatting and syntax validation tools. Visual Studio Code was set up to perform PEP 8 compliance checks automatically, reducing code quality errors during prototyping. Pylance was configured to perform static type checking, which helped catch type mismatch errors before runtime execution.
 
 \subsection{Architectural Pattern and Local Prototyping}
-The backend framework is Django version 4.2.7, which implements the Model-View-Template (MVT) design pattern. This architecture establishes a clear separation of data schemas, request handling logic, and user-facing layouts. For initial local development and database schema testing, SQLite 3 was utilized as the storage layer because it simplifies initial prototyping while maintaining logical compatibility with a future transition to PostgreSQL.
+The backend framework is Django version 5.2.7, which implements the Model-View-Template (MVT) design pattern. This architecture establishes a clear separation of data schemas, request handling logic, and user-facing layouts. For initial local development and database schema testing, SQLite 3 was utilized as the storage layer because it simplifies initial prototyping while maintaining logical compatibility with a future transition to PostgreSQL.
 
 The Model layer defines the database schema, including validation rules and relationships. The View layer handles the request-response lifecycle, coordinating authentication, CSV parsing, and AI classification. The Template layer renders the HTML layouts, incorporating JavaScript for dynamic updates.
 
@@ -80,7 +80,7 @@ Using fixed-point decimals instead of floating-point numbers is a deliberate cho
 
 \section{Natural Language Processing and Gemini API Classification Engine}
 \subsection{Semantic Mapping Core}
-The transaction categorization service utilizes Google's Gemini API to automate the classification of financial records. Instead of training a custom neural network locally or using a simple keyword matching database, the system executes semantic analysis on transaction descriptions using the gemini-2.0-flash model. This model evaluates the semantic meaning of transaction descriptions and maps them to custom spending categories.
+The transaction categorization service utilizes Google's Gemini API to automate the classification of financial records. Instead of training a custom neural network locally or using a simple keyword matching database, the system executes semantic analysis on transaction descriptions using the Gemini Flash model series. This model evaluates the semantic meaning of transaction descriptions and maps them to custom spending categories.
 
 The classification process is managed by a dedicated service class that coordinates the classification pipeline. When the user initiates classification, the service retrieves all uncategorized transaction records associated with the user account. The service also fetches the user's custom category list from the database to build a custom category list. The list of uncategorized transactions is divided into batches of 25. This batch size balances token limits and latency, fitting the transaction data and category list within the model's context window.
 
@@ -95,14 +95,14 @@ This structured prompt format allows the classification system to adapt automati
 
 \section{Confidence Score Thresholding and Bypassing Logics}
 \subsection{Mathematical Safety Borders}
-To prevent automated errors and ensure data accuracy, the classification system applies a validation check to the model's response. The system establishes a confidence threshold of 0.35 to evaluate each prediction. If a transaction's description is vague, abbreviated, or contains unusual character patterns, the model may return a classification with low confidence.
+To prevent automated errors and ensure data accuracy, the classification system applies a validation check to the model's response. The system establishes a confidence threshold of 0.5 to evaluate each prediction. If a transaction's description is vague, abbreviated, or contains unusual character patterns, the model may return a classification with low confidence.
 
-The validation utility is managed by a response validator class. It parses the JSON array returned by the API and inspects the confidence score for each entry. If the model assigns a category from the user's list but the confidence score is below 0.35, the validator flags the result as invalid. This mathematical safety border prevents the database from being populated with low-probability predictions, keeping the data clean.
+The validation utility is managed by a response validator class. It parses the JSON array returned by the API and inspects the confidence score for each entry. If the model assigns a category from the user's list but the confidence score is below 0.5, the validator flags the result as invalid. This mathematical safety border prevents the database from being populated with low-probability predictions, keeping the data clean.
 
-If the classification exceeds the 0.35 threshold and matches a valid category name, the validator confirms the prediction. The transaction is then updated with the new category, and the confidence score is saved to indicate the accuracy of the prediction.
+If the classification exceeds the 0.5 threshold and matches a valid category name, the validator confirms the prediction. The transaction is then updated with the new category, and the confidence score is saved to indicate the accuracy of the prediction.
 
 \subsection{Uncategorized Fallback Rules}
-If the confidence score for a transaction is below 0.35, or if the model suggests a category that is not in the user's defined list, the system applies a fallback rule. The validator assigns the default label Uncategorized to the transaction, and the engine saves this label to the database.
+If the confidence score for a transaction is below 0.5, or if the model suggests a category that is not in the user's defined list, the system applies a fallback rule. The validator assigns the default label Uncategorized to the transaction, and the engine saves this label to the database.
 
 When assigning the Uncategorized label, the system preserves the model's prediction by saving it in a suggested category field. This suggested category is displayed on the user interface, helping the user review and correct the classification manually. The template provides a suggestion button that allows the user to accept the recommendation with a single click.
 

@@ -127,30 +127,30 @@ The system administrator manages the Django admin interface. The administrator c
 
 \section{CSV Upload Workflow}
 \subsection{Prepare the CSV File}
-The CSV file must include the required columns:
-\begin{itemize}
-	\item \texttt{Date}
-	\item \texttt{Description} or \texttt{Raw\_Description}
-	\item \texttt{Amount}
-\end{itemize}
+The STS system supports two distinct ingestion pathways depending on the origin of your financial data:
+\begin{enumerate}
+	\item \textbf{Generic CSV Template:} Useful for general financial exports. The CSV file must match the standard template format and include columns named \texttt{Date}, \texttt{Description} (or \texttt{Raw\_Description}), and \texttt{Amount}.
+	\item \textbf{NayaPay Statement Ingestion:} Specifically designed to accept official exported CSV statements directly from the NayaPay mobile application. This mode automatically cleans local currency indicators (Rs., PKR, and commas), parses multiple date/time representations, and extracts transaction reference numbers (Transaction IDs), payment platforms (e.g. Raast/IBFT), and merchant names using semantic regular expression patterns.
+\end{enumerate}
 
-The file may also include optional columns such as \texttt{Notes}, \texttt{Comments}, \texttt{Merchant\_Name}, \texttt{Merchant}, \texttt{Transaction\_Type}, or \texttt{Type}. Optional columns improve AI classification because they provide more context.
+Both formats may also include optional columns such as \texttt{Notes}, \texttt{Comments}, \texttt{Merchant\_Name}, \texttt{Merchant}, \texttt{Transaction\_Type}, or \texttt{Type}. These optional columns improve AI classification accuracy by supplying additional context.
 
 \subsection{Upload Transactions}
 \begin{normalsteps}
 	\item Log in to the system.
 	\item Click \textit{Upload CSV} in the sidebar.
-	\item Click the upload zone or drag the CSV file into it.
-	\item Confirm that the selected file name appears.
+	\item Select the correct \textit{Import Type} (either ``Template'' or ``NayaPay Statement'') from the dropdown selector.
+	\item Click the upload zone or drag your CSV file(s) into it. The uploader supports selecting and uploading **multiple CSV files** at the same time.
+	\item Confirm that the selected filenames and the total file count are displayed in the upload queue.
 	\item Click \textit{Upload \& Process}.
 	\item Wait for the upload to complete.
-	\item Review the import success message and transaction preview.
+	\item Review the import summary message, which displays the count of new transactions saved and any duplicate rows skipped.
 \end{normalsteps}
 
 \begin{figure}[H]
 	\centering
 	\includegraphics[width=0.8\textwidth]{guide_upload.png}
-	\caption{CSV upload page.}
+	\caption{CSV upload page with multi-file and import type selection.}
 	\label{fig:guide_upload}
 \end{figure}
 
@@ -162,6 +162,24 @@ The file may also include optional columns such as \texttt{Notes}, \texttt{Comme
 	\item If amount rows fail, remove unsupported characters and confirm the value is numeric.
 	\item Upload the corrected CSV file again.
 \end{normalsteps}
+
+\subsection{Wiping Data and Starting Fresh (Danger Zone)}
+If you want to clear your records or start your analytics fresh, you can safely wipe your profile data:
+\begin{normalsteps}
+	\item Scroll down to the bottom of the Upload CSV page to locate the \textit{Danger Zone} panel.
+	\item Click the red \textit{Clear All History} button.
+	\item The system will display a double-confirmation modal overlay warning you that this action is permanent.
+	\item Type the required security keyword ``\texttt{DELETE}'' (case-sensitive) in the validation textbox.
+	\item Click the confirm button to execute.
+	\item Verify that your dashboard and upload preview return to their clean, empty states.
+\end{normalsteps}
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.8\textwidth]{guide_danger_zone.png}
+	\caption{Danger Zone data clear confirmation modal.}
+	\label{fig:guide_danger_zone}
+\end{figure}
 
 \section{AI Sorting Workflow}
 \subsection{Open AI Sorting}

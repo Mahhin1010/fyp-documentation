@@ -130,8 +130,9 @@ BoldItalicFont = timesbi
     \input{chapters/05_testing}
     \input{chapters/06_user_guide}
 
-    \chapter*{References}
+    \renewcommand{\bibname}{References}
+    \bibliographystyle{IEEEtran}
     \addcontentsline{toc}{chapter}{References}
-    References will be finalized according to the department's required citation format.
+    \bibliography{references}
 
 \end{document}
