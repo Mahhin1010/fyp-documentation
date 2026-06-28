@@ -316,3 +316,42 @@ The dashboard aggregation system must handle empty datasets and authorization is
 	\item \textbf{Expired Session Token (Alternate Course):} The JSON Web Token contains an expiration timestamp set to 10 minutes. If the user keeps the dashboard open past this limit, Metabase displays a signature expired error. Refreshing the dashboard page generates a fresh token, restoring the view.
 	\item \textbf{Zero Record State (Exception Path):} If the user has no transactions, the database queries return empty sets. Metabase displays empty visual states on the dashboard, explaining that data needs to be uploaded to populate the charts.
 \end{itemize}
+
+\section{Comprehensive System Business Rules}
+
+\subsection{Data Scoping Boundaries}
+The application operates under a strict user isolation framework to protect personal financial data. Every database query executed by the backend must include the unique identifier of the active user session. This ensures that no profile can read, write, or modify records belonging to another account.
+
+Cross-user query parameters are entirely restricted at the database access layer. Even if an absolute record identifier is entered directly into an interface field, the request router blocks the operation. This scoping rule forms the foundational security layer for all transaction and category storage.
+
+This isolation is maintained across all parts of the application, including the reporting features. When users request dashboard updates, the query engine limits the search parameters to their specific user identifier. This configuration prevents data leaks, ensuring that personal financial statements remain private.
+
+\subsection{Ingestion Initialization States}
+When a new statement file passes through the ingestion pipeline, its records are initialized with a standard status. Each parsed transaction entry is saved with an absolute label of "Uncategorized" and an initial confidence score of 0.0. This baseline state indicates that the record is stable and ready for automated sorting.
+
+Transactions remain in this uncategorized state until they are successfully processed by the classification service. The data engineering pipeline separates file uploads from model inference. This separation ensures that raw records are stored safely, even if network issues delay the classification step.
+
+This structural design keeps the database consistent and reliable. Users can review their uploaded data before running the classification engine, verifying that all entries are present. It also ensures that the system can retry the classification step if the API becomes temporarily unavailable.
+
+\subsection{Manual Override Hierarchy}
+The application gives top priority to explicit user choices over automated predictions. When a user corrects a transaction's category via the web interface, the system runs a specific update routine. This routine replaces the category reference, resets the confidence score, and flags the record as "Manually Tagged".
+
+Once a record is marked as manually tagged, it is locked against future automated changes. Downstream batch processing loops identify this status flag and skip the record entirely. This rule guarantees that the user retains final control over their financial reporting layout.
+
+Manual overrides also help improve future classifications. By keeping user choices locked, the system preserves a set of corrected records that can be used for reference. This layout design ensures that automated processes never overwrite the user's custom changes.
+
+\section{Technical Reliability and System Resilience}
+
+\subsection{API Partition Recovery Logics}
+Because the sorting module relies on an external runtime interface via the Gemini API, it must handle network changes gracefully. The system divides uncategorized transactions into separate processing blocks capped at 25 rows per request. This small batch size helps manage API payload constraints and reduces connection timeouts.
+
+If a batch request encounters a network drop or an API rate exception, the backend catches the fault immediately. The application halts execution for that specific block and rolls back the current query transaction. This isolation ensures that previously completed batches remain saved, allowing the user to resume processing without losing data.
+
+The system logs these network faults and displays helpful status messages on the user interface. It avoids system crashes by capturing exceptions at the batch boundary, keeping the application stable. This setup allows the system to retry the process once the network connection is restored.
+
+\subsection{Numeric Formatting and Fixed-Point Controls}
+Financial data processing requires absolute mathematical accuracy during summary calculations. The ingestion parser rejects standard binary floating-point numbers during data type conversions. Floating-point numbers can introduce minor rounding errors that distort financial reports over large datasets.
+
+The system uses fixed-point decimal fields with a strict precision limit of two decimal places. All currency symbols, comma separators, and textual codes are stripped out before conversion. This structural formatting guarantees that calculation summaries on the interactive dashboard match the user's physical statements exactly.
+
+This precision rule is applied to all database fields and summary routines. It prevents discrepancies when calculating totals for categories, months, or year-to-date reports. This consistency helps build trust with users, ensuring that the visual reports are reliable.

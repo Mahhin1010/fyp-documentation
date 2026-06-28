@@ -253,3 +253,19 @@ This testing block isolates administrative user bounds, auditing controls, cross
 	TC-40 & Security Boundary & Alternate Scenario & Disconnect the active network interface connection midway through a 500-row AI statement classification process. & System flags connection failure, halts the active process, and retains already processed records in their resolved categories without data loss. & Process halted cleanly; session statistics updated with error details and successfully sorted rows remained saved in the database. & Pass \\ \hline
 \end{longtable}
 \endgroup
+
+\section{Boundary Load Testing and Input Security}
+
+\subsection{High-Volume Processing Diagnostics}
+Load testing evaluated the application's stability when handling large data files. A testing dataset containing 500 transaction rows with varied date formats and negative amounts was uploaded to the system. The parsing utility successfully read, cleaned, and stored all 500 entries using a single bulk database query.
+
+System diagnostic monitoring confirmed that memory usage remained stable throughout the bulk data write loop. The backend executed the file parsing and model data delivery within the required performance limits. The testing confirmed that the system runs smoothly on standard virtual servers without processing bottlenecks.
+
+The diagnostics showed that bulk database operations prevent locks and delays during processing. It confirmed that the system resources can support large datasets without degradation. This reliability is important for maintaining a good experience during high-volume uploads.
+
+\subsection{Malicious Input Mitigation and Defenses}
+Security testing verified that the input fields and form validation routines resist common web exploits. When invalid database escape characters or manipulation codes were entered into the category configuration forms, the system handled them safely. The object-relational mapper parameterized the inputs automatically, saving the data as safe text strings.
+
+Similarly, script tags submitted through the application forms were neutralized using automatic text encoding. The template engine renders these inputs as flat, literal text rather than executable browser code. This defensive framework isolates the database and user workspace from cross-site injection vulnerabilities.
+
+These security tests confirmed that the database remains protected against SQL injection attacks. It ensures that custom category names or user comments cannot be used to run unauthorized scripts. This defense keeps the application secure for all registered users.

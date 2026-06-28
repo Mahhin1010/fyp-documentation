@@ -182,3 +182,35 @@ To support dynamic category corrections, the classification results page impleme
 When the user selects a new category or clicks the suggestion button, a JavaScript function is triggered. This function uses the fetch API to send an asynchronous POST request to the update category API endpoint. The request payload contains the transaction ID, the selected category name, and a flag indicating whether to create a new category if it does not exist.
 
 The request headers include a CSRF token retrieved from the browser cookie to prevent cross-site request forgery. When the API responds with a success message, the JavaScript updates the table row dynamically, replacing the select menu with a colored category tag and updating the confidence column to show a manual tag. This inline update logic provides a fast, interactive experience without page reloads.
+
+\section{Processing Pipelines and String Sanitization}
+
+\subsection{Tabular Stream Buffering}
+The application processes uploaded statements using memory buffers to minimize storage load. When a multipart form submission is verified, the file data is read into memory as a byte stream. This design prevents disk-write delays, keeping the system responsive during multi-file uploads.
+
+The system uses a class-based view framework to separate incoming requests cleanly. GET requests render the upload forms, while POST requests direct data streams straight to the parsing scripts. This decoupled design isolates data processing tasks from presentation layouts, simplifying testing and future maintenance.
+
+The memory buffer handles file streams efficiently, avoiding the need for temporary storage cleanups. It prevents server memory usage spikes by using streaming readers to process the data. This setup ensures that the system handles multiple uploads without performance lag.
+
+\subsection{Cleansing Routines for Local Financial Formats}
+The ingestion utility runs a systematic text-cleaning loop to handle varied statement layouts. The parser processes descriptions by trimming whitespace and stripping out non-printable characters. Reference numbers and transactional codes are isolated to prepare clean text strings for the classification engine.
+
+Simultaneously, the amount parsing utility sanitizes numeric fields. It strips currency markers, space characters, and localized text flags like "PKR" or "Rs" from the input string. The cleaned string is then cast into a high-precision decimal format, ensuring reliable values for the dashboard charts.
+
+This cleaning step handles the formatting variations common in local statement exports. It converts different currency styles into a single standard format before database entry. This consistency ensures that the data is ready for accurate summary reports.
+
+\section{Prompt Infrastructure and Safety Thresholds}
+
+\subsection{Structural Output Contracts}
+The classification engine builds structured prompts that include the user's custom categories and a batch of 25 transactions. The prompt functions as an explicit execution gate, establishing formatting boundaries for the language model. It directs the model to analyze text signals and assign the closest matching category from the user's list.
+
+The system prompt enforces a strict JSON output layout, requiring the model to return a clean data array. This array must contain the transaction identifier, category assignment, confidence score, and alternate recommendation. The prompt explicitly bans conversational text or markdown code blocks to ensure successful backend parsing.
+
+This JSON contract reduces parsing errors by forcing the model to return structured data. It prevents formatting issues that would disrupt the database update pipeline. This rule keeps the connection between the application and the API stable.
+
+\subsection{Deterministic Generation Settings}
+The application configures the language model to ensure consistent, reliable outputs across transaction batches. The generation parameters set a low temperature value of 0.1, reducing creative variance in the model's choices. This constraint ensures that the system delivers identical classifications for identical transaction records.
+
+By passing custom category names directly into the prompt context, the system updates its classification criteria dynamically. If a user adds or renames a category, the changes are included in the next prompt payload. This lets the system adapt to new sorting rules immediately without requiring model retraining.
+
+This setup ensures that the classification logic remains consistent over time. It gives the user control over the taxonomy without requiring server-side code updates. This approach makes the classification service flexible and easy to maintain.

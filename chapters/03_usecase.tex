@@ -292,6 +292,29 @@ The Use Case Diagram provides a high-level overview of the system's interactions
 	Special Req. & Admin actions must be logged. \\ \hline
 \end{tabularx}
 
+\subsection{Operational Edge Cases and Exception Paths}
+
+\subsubsection{Authentication and Directory Access Controls}
+The application implements explicit validation checks to prevent unauthorized access to internal pages. If a browser tries to reach restricted directories like the upload view URL path without an active session, the route middleware blocks the page load. The system terminates the request and redirects the visitor to the login gate.
+
+When a user submits invalid form data or an insecure password during registration, database writes are blocked. The interface flags the incorrect input fields and displays clear instructions on formatting rules. This check occurs entirely before session initialization, keeping the user registration tables secure.
+
+This authentication barrier protects the application server from unauthorized requests. It prevents external bots from accessing the processing endpoints, protecting system resources. It also ensures that all session tokens are generated securely, maintaining a safe application environment.
+
+\subsubsection{Ingestion Type and Layout Mismatches}
+The system checks file types at the upload boundary before processing any data stream. If a user selects the NayaPay statement pathway but uploads a file with an invalid extension, the form validation script rejects the file. The upload loop is blocked, preventing binary data from causing parser crashes.
+
+If an uploaded CSV file uses an unexpected layout or is missing a required column like the amount field, the parser triggers an exception path. The ingestion routine halts data processing, discards the temporary file stream, and displays a message identifying the missing header. This prevents partial or corrupted data from reaching database rows.
+
+This validation step reduces backend errors by blocking bad files early in the process. It helps users fix formatting issues by identifying the missing columns clearly. This design keeps the ingestion pipeline clean and prevents database corruption.
+
+\subsubsection{Post-Inference Validation Exceptions}
+The application runs a response validation routine after receiving data from the classification service. If the model returns a category label that does not exist in the user's defined list, the validator catches the mismatch. It discards the invalid label to protect the database from corruption.
+
+When a prediction is rejected or falls below the mandatory 0.5 confidence threshold, the fallback rule applies. The system marks the transaction as "Uncategorized" but saves the model's prediction in a separate suggestion field. This workflow allows the user to review the recommendation and accept it with a single click.
+
+This validator catches errors caused by model hallucination or unexpected responses. It ensures that the database only contains categories that the user has configured. This step keeps the data clean and protects the integrity of the reporting features.
+
 \section{Process Modeling and System Analysis}
 The use cases above describe the system from the perspective of its actors. Process modeling describes the same system from the perspective of runtime behavior: what happens first, which component responds, and how data moves from raw input toward categorized analytics. For this project, process modeling is especially important because the application is a multi-step workflow that begins with authentication, depends on user-defined categories, accepts transaction files, invokes an AI classification service, persists the result, and finally visualizes categorized data through a BI layer.
 
@@ -476,3 +499,19 @@ The Physical Architecture describes the hardware and software environment in whi
 \end{figure}
 
 This deployment design separates operational responsibilities. Django owns application security and user workflow. PostgreSQL owns durable relational data. Gemini API owns language-model based classification. Metabase owns dashboard presentation. Separating these responsibilities keeps the application maintainable because the classification service and dashboard service can evolve without rewriting the core transaction upload and persistence logic.
+
+\section{Human-Centered Interface Design Philosophy}
+
+\subsection{Visual Affordance and Glassmorphic Containers}
+The application dashboard layout focuses on clarity and reducing visual distraction. The main analytics view uses a modern template style with clean borders and subtle translucent backgrounds. This design framework groups financial metrics into distinct sections, helping users spot spending trends quickly.
+
+Interactive charts adapt across various screen sizes, ensuring readability on both desktop monitors and mobile devices. Navigation menus use simple layouts to keep the core workflows straightforward. This layout minimizes the time required to complete tasks, making financial tracking easier for everyday users.
+
+The visual layout highlights key metrics, such as monthly totals or category breakdowns, to help users read the data quickly. It avoids cluttered elements, keeping the interface simple and clean. This design approach helps users focus on their financial goals without feeling overwhelmed.
+
+\subsection{Inline Correction Interoperability}
+The classification results page uses a simple tabular layout to speed up manual data validation. Transactions that need review feature a clean dropdown menu and a dedicated suggestion button side-by-side. This arrangement lets users fix automated errors directly inside the data list.
+
+When a user selects a category, an asynchronous JavaScript function sends the update to the server. The data changes update in the background, updating the row instantly without a full page refresh. This responsive interaction makes managing financial logs fast and efficient.
+
+This inline interface reduces the number of clicks needed to correct categories. Users can resolve multiple transactions in a single session without waiting for page updates. This responsive layout makes the system feel faster, improving the overall user experience.

@@ -44,6 +44,22 @@ Global platforms like YNAB and Mint demonstrate the feasibility of the CSV-impor
 \end{itemize}
 \textit{Implication.} The global tools prove the CSV-to-analytics model is viable but highlight a gap for a more intelligent, low-friction, and personalized solution tailored to the realities of the local market. This project is designed specifically to fill that gap.
 
+\subsection{C. Comparative Analysis Framework}
+
+\subsubsection{The Keyword Inflexibility Problem}
+Traditional personal finance tracking software relies heavily on rigid string-matching routines. These rule-based parsers search for specific, exact keywords to match an entry to a category. While computationally fast, this framework fails when processing real-world transaction statements.
+
+Local digital wallet statements frequently include irregular text strings, merchant branch codes, or variable transfer notes. A rule-based system looking for "KFC" will completely miss strings like "KFC-ISB-05" or "KFC Centaurus". This limitation forces users to constantly maintain complex mapping tables.
+
+In addition to branch codes, transactions often append dynamic transaction numbers, payment dates, or terminal identifiers to the description field. These changing characters create unique strings for every purchase, even when the merchant is identical. Because a static keyword parser cannot match these variants, the system leaves many transactions uncategorized, requiring constant manual updates. Over time, the administrative overhead of adjusting rules makes these tracking tools too tedious for average users to maintain.
+
+\subsubsection{Semantic Adaptation and Intent Recognition}
+The Smart Transaction Sorter addresses this limitation by using natural language processing. Instead of treating text strings as exact keys, the system processes transaction descriptions as contextual data. It evaluates the vocabulary, merchant references, and user comments together.
+
+The underlying language model recognizes the real-world semantic intent behind variations in text. This allows the system to map "Paid to INDRIVE ISLAMABAD" to a user-defined "Transport" category automatically. This semantic approach removes the need for constant manual rules, reducing setup effort for the end-user.
+
+By looking at the complete text, the classifier captures contextual hints that rule-based systems ignore. For instance, payment descriptions containing words like transfer, sending, or receiving are evaluated alongside the payment type to determine the core intent of the transaction. This ensures that the system handles unusual or brand-new merchant names correctly without needing direct user intervention. It allows the classification system to adjust to new spending patterns automatically, making the initial setup much simpler.
+
 \section{Modules \& Sub-modules}
 The system architecture will be broken down into the following modules and sub-modules to ensure a clear separation of concerns and facilitate iterative development.
 
@@ -161,3 +177,19 @@ The project timeline is scheduled over approximately seven months (30 weeks), vi
 	\caption{Project development timeline presented as a Gantt chart.}
 	\label{fig:gantt}
 \end{figure}
+
+\section{Socio-Economic Context of FinTech in Pakistan}
+
+\subsection{The Shift to Mobile Banking Ecosystems}
+The financial landscape in Pakistan has changed rapidly due to the growth of branchless banking platforms. Services like Easypaisa, JazzCash, NayaPay, and SadaPay have enabled millions of individuals to manage money digitally. This has led to a massive increase in transaction volumes across a variety of user demographics.
+
+Despite this growth in digital transactions, financial literacy tools have not kept pace. Most wallet providers optimize their interfaces for quick payments rather than long-term asset management. Users are left with unstructured text logs that do not offer clear visibility into their personal cash flows.
+
+The absence of native tracking features makes it hard for users to build positive saving habits. Digital statements show when and where money was spent, but they don't help users understand their spending patterns. This gap in service creates a clear need for secondary analytical tools that can organize cash flows.
+
+\subsection{The Cognitive Load of Unstructured Financial Data}
+Raw data statements exported as CSV files create an analytical barrier for everyday consumers. Disorganized rows of dates and numeric strings make manual categorization tedious and frustrating. This data complexity often prevents users from maintaining consistent personal budgets.
+
+The lack of a domestic personal finance management standard highlights the need for an automated layer. A standalone utility that cleans irregular formats and presents data visually makes financial tracking accessible. This system provides a practical blueprint for improving consumer financial awareness in the local market.
+
+By automating the sorting task, the system removes the mental effort required to manage personal accounts. Users no longer need to spend hours grouping transactions by hand or deciphering vague merchant text. This convenience encourages regular budget reviews, helping individuals make better financial decisions.
