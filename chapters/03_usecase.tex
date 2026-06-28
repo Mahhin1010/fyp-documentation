@@ -359,8 +359,37 @@ The Entity Relationship Diagram (Figure \ref{fig:erd}) visualizes the logical st
 
 The ERD reflects the principle of user isolation. A category is not merely a label such as Groceries or Rent; it belongs to a specific user. This allows two users to create categories with the same visible name without sharing financial data or classification behavior. A transaction also belongs directly to a user. This is necessary because a transaction can temporarily have no category before AI processing, and it may return to an uncategorized state when confidence is low or a category is removed. Direct ownership prevents uncategorized rows from becoming orphaned.
 
+\subsection{Schema Specification \& Data Separation}
+The relational database design guarantees strict data isolation per user while supporting fast aggregations for the business intelligence layers. The schema uses a highly isolated layout where the primary user table connects directly to both custom categories and transaction records.
+
+Each user account is assigned a unique primary key. The categories table stores custom labels defined by individual users, carrying a foreign key constraint back to the user table. This structure allows each individual to have a completely unique classification footprint. The main transactions ledger links each entry to a user account and an identified category via standard relational keys, tracking the raw string, absolute decimal amount, and time markers.
+
+\subsection{Performance Optimization and Query Indexing}
+As transaction volumes scale over multiple months, analytical queries, such as calculating monthly category totals, can suffer from performance degradation. To optimize response times, the following database strategies are implemented:
+\begin{itemize}
+	\item \textbf{Composite Indexing:} A composite index is applied to the transaction database table across the user identity and timestamp fields. This accelerates chronological slicing and dashboard rendering for specific date ranges.
+	\item \textbf{Query Optimization:} Django Object-Relational Mapping queries utilize database select relations to perform SQL inner joins at the database level. This prevents the common N plus one query processing loop, reducing database round-trips from dozens down to a single optimized execution.
+\end{itemize}
+
 \section{Application Architecture}
 The application architecture follows a modular Django Model-View-Template design. Django models represent persistent data, views coordinate request handling and business workflows, templates render the user interface, forms validate user input, and URL configurations map browser requests to the correct application behavior. This separation of concerns improves maintainability because authentication, category management, CSV ingestion, AI sorting, and analytics embedding can be reasoned about as distinct modules while still sharing the same user session and database.
+
+\subsection{Advanced Data Ingestion \& Normalization Pipeline}
+Digital financial ecosystems in Pakistan rely heavily on localized fintech services like EasyPaisa, JazzCash, and traditional banking apps. However, these platforms do not use a standardized export format. Each engine exports CSV files with differing column structures, date formats, and string patterns. To handle this, the system implements an extensible Data Ingestion Pipeline. The pipeline consists of three structural phases:
+\begin{itemize}
+	\item \textbf{Source Identification Layer:} Detects the originating financial institution by checking header signatures, such as specific string allocations unique to an EasyPaisa or JazzCash statement.
+	\item \textbf{Schema Mapping \& Standardizer:} Maps varied keys, such as transaction time, value date, or transaction date, to a unified internal schema containing the timestamp, raw description, amount, credit or debit type, and reference identification.
+	\item \textbf{Data Cleansing Engine:} Sanitizes strings by stripping trailing whitespace, removing localized non-ascii noise characters, and converting local date formats into standard ISO-8601 timestamps for accurate database insertion.
+\end{itemize}
+
+\subsection{Detailed Component Interactions}
+The system architecture separates operations into clear computational layers to ensure responsive user interactions:
+\begin{itemize}
+	\item \textbf{Presentation Layer:} Built using Django templates, HTML5, and TailwindCSS. It utilizes asynchronous chart rendering scripts to display financial trends without causing page reloads.
+	\item \textbf{Application \& Logic Layer:} The core Django framework manages session allocations, core view controllers, and routing mechanisms. It relies on a custom background processing module to handle intensive machine learning tasks without blocking the main browser request-response cycle.
+	\item \textbf{Intelligence Layer:} Houses the pre-trained language model. This layer accepts vectorized transaction text tokens, matches them against learned feature boundaries, and returns predicted category tags along with prediction confidence scores.
+	\item \textbf{Data Persistence Layer:} A PostgreSQL database configured with indexed tables optimized for analytical queries.
+\end{itemize}
 
 \subsection{Class Diagram}
 The Class Diagram (Figure \ref{fig:class_diagram}) depicts the static structure of the system. It illustrates the system's classes, their attributes, methods, and relationships. The diagram is retained from the original design documentation because it captures the intended relationships among users, transaction data, category labels, AI sorting logic, and analytics behavior.

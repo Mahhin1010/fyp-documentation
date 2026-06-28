@@ -93,6 +93,19 @@ The prompt enforces a strict JSON output contract, requiring the model to return
 
 This structured prompt format allows the classification system to adapt automatically to any user. If a user adds a custom category like fuel or education, the taxonomy list changes dynamically, and the model immediately begins using the new categories without requiring retraining or manual configuration.
 
+\subsection{Text Pre-Processing and Tokenization Strategy}
+Transaction descriptions are notoriously short, cryptic, and messy. A standard transfer record might look like a random string of alphanumeric transaction codes mixed with a merchant name. Passing raw text directly to a language model yields poor performance due to high noise-to-signal ratios. Therefore, text undergoes a custom tokenization routine before inference:
+\begin{itemize}
+	\item \textbf{Regex Sanitization:} Regular expressions isolate and remove transaction identifiers, reference numbers, sequences of digits, and special characters that do not contribute to semantic meaning.
+	\item \textbf{Stop-Word Filtration:} Standard English stop-words are eliminated. Additionally, financial stop-words that appear universally across all rows, such as transfer, trf, paid, ibft, or pkr, are filtered out to prevent them from skewing model attention.
+	\item \textbf{Case Normalization \& Stemming:} All text is converted to lowercase, and structural words are reduced to their root forms, which ensures that words like shopping and shops collapse to a single feature token.
+\end{itemize}
+
+\subsection{Model Selection, Embeddings, and Inference}
+The classification module utilizes a lightweight, pre-trained transformer model or a dense vector-embedding approach optimized for text classification. Each cleaned transaction string is converted into a high-dimensional vector. For instance, strings referring to different branches of the same grocery store chain map close to one another within the vector space.
+
+The model processes these vectors through its classification layer, computing a probability distribution across all possible categories using a standard softmax activation function. The category with the highest probability score is assigned to the transaction. If the confidence score drops below a pre-configured threshold, such as seventy percent, the system flags the transaction as Uncategorized and allows the user to manually override it. This prevents misclassifications from degrading the integrity of the business intelligence dashboard.
+
 \section{Confidence Score Thresholding and Bypassing Logics}
 \subsection{Mathematical Safety Borders}
 To prevent automated errors and ensure data accuracy, the classification system applies a validation check to the model's response. The system establishes a confidence threshold of 0.5 to evaluate each prediction. If a transaction's description is vague, abbreviated, or contains unusual character patterns, the model may return a classification with low confidence.

@@ -47,6 +47,21 @@ The automated test suite consists of 25 comprehensive test cases covering authen
 
 During verification, the automated test suite executed all 25 test cases successfully, registering zero errors or failures. The remaining 15 manual test scenarios (such as cross-browser layouts, session safety redirects on back button usage, and network drop recovery) were validated through manual testing procedures to complete the verification coverage.
 
+\subsection{Algorithmic Evaluation Metrics}
+The transaction sorting engine is thoroughly evaluated using standard classification metrics to guarantee real-world reliability:
+\begin{itemize}
+	\item \textbf{Precision:} Measures the accuracy of assigned categories, ensuring that transactions marked as Utilities actually belong there.
+	\item \textbf{Recall:} Measures the model's ability to find all instances of a specific category within the dataset.
+	\item \textbf{F1-Score:} The harmonic mean of precision and recall, serving as the definitive benchmark for highly imbalanced financial datasets, where categories like Rent occur only once a month while Food occurs daily. It balances precision and recall mathematically to ensure consistent classification quality.
+\end{itemize}
+
+\subsection{System and Integration Testing}
+Beyond model metrics, the web application undergoes extensive integration testing:
+\begin{itemize}
+	\item \textbf{Boundary Value Testing:} Validates system resilience against extreme transaction amounts, such as zero, negative figures, or unusually large numbers, and malformed CSV files missing entire header rows.
+	\item \textbf{Security Validation:} Ensures strict user isolation so that no user can view, edit, or accidentally query another user's financial records or custom category maps.
+\end{itemize}
+
 \section{Performance Evaluation and Benchmarking Under Load}
 \subsection{High-Volume Processing Metrics}
 To confirm compliance with the strict non-functional performance baselines, load testing was executed on the primary development machine (11th Gen Intel Core i5, 16 GB DDR4 RAM). The core performance requirement specifies that a standard financial statement file containing exactly 500 transaction lines must be fully parsed, contextually categorized by the AI, and stored in the database within a maximum window of 60 seconds. A mock transaction dataset was compiled using realistic descriptions typical of local digital wallet exports, including payment notes like ``KFC'', ``Uber Ride'', and ``Electric Bill Payment''.

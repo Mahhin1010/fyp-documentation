@@ -18,6 +18,18 @@ The Entity Relationship Diagram (Figure \ref{fig:erd}) visualizes the logical st
 	\label{fig:erd}
 \end{figure}
 
+\subsection{Schema Specification \& Data Separation}
+The relational database design guarantees strict data isolation per user while supporting fast aggregations for the business intelligence layers. The schema uses a highly isolated layout where the primary user table connects directly to both custom categories and transaction records.
+
+Each user account is assigned a unique primary key. The categories table stores custom labels defined by individual users, carrying a foreign key constraint back to the user table. This structure allows each individual to have a completely unique classification footprint. The main transactions ledger links each entry to a user account and an identified category via standard relational keys, tracking the raw string, absolute decimal amount, and time markers.
+
+\subsection{Performance Optimization and Query Indexing}
+As transaction volumes scale over multiple months, analytical queries, such as calculating monthly category totals, can suffer from performance degradation. To optimize response times, the following database strategies are implemented:
+\begin{itemize}
+	\item \textbf{Composite Indexing:} A composite index is applied to the transaction database table across the user identity and timestamp fields. This accelerates chronological slicing and dashboard rendering for specific date ranges.
+	\item \textbf{Query Optimization:} Django Object-Relational Mapping queries utilize database select relations to perform SQL inner joins at the database level. This prevents the common N plus one query processing loop, reducing database round-trips from dozens down to a single optimized execution.
+\end{itemize}
+
 \section{Application Architecture}
 The application architecture follows a modular structure, separating the user interface, business logic, and data handling. This separation of concerns ensures maintainability and scalability.
 
