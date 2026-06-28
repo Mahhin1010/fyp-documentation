@@ -43,10 +43,7 @@ The end-to-end testing confirmed that the application flows logically. The navig
 \subsection{Automated Test Suite Execution}
 To ensure continuous code quality and prevent regression errors, the functional and integration tests are organized into an automated test suite. The Django test runner is utilized to execute these test cases within an isolated test environment, utilizing a temporary in-memory database to prevent test contamination.
 
-The automated test suite consists of 25 comprehensive test cases covering authentication logic, category management, CSV parsing validations, AI service mock integrations, AJAX correction API endpoints, Metabase JWT signing parameters, and multi-user isolation boundaries. The automated test suite is executed by running the following command from the project root:
-\begin{lstlisting}[language=bash]
-python manage.py test
-\end{lstlisting}
+The automated test suite consists of 25 comprehensive test cases covering authentication logic, category management, CSV parsing validations, AI service mock integrations, AJAX correction API endpoints, Metabase JWT signing parameters, and multi-user isolation boundaries. The test suite runs in the environment, validating all backend models and views.
 
 During verification, the automated test suite executed all 25 test cases successfully, registering zero errors or failures. The remaining 15 manual test scenarios (such as cross-browser layouts, session safety redirects on back button usage, and network drop recovery) were validated through manual testing procedures to complete the verification coverage.
 
